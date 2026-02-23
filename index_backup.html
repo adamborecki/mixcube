@@ -138,11 +138,6 @@
       border-radius:12px;
       background:rgba(0,0,0,.2);
       overflow:hidden;
-      display:flex;
-      flex-direction:column;
-      min-height:220px;
-      max-height:40vh;
-      flex:0 0 auto;
     }
     .stemHead{
       padding:9px 10px;
@@ -155,21 +150,13 @@
     }
     .stemHead .left,
     .stemHead .right{display:flex;align-items:center;gap:8px;}
-    #stemList{
-      flex:1 1 auto;
-      min-height:160px;
-      height:240px;
-      overflow-y:auto;
-      overflow-x:hidden;
-      -webkit-overflow-scrolling:touch;
-    }
+    #stemList{max-height:290px;overflow:auto;}
     .stemRow{
       display:grid;
       grid-template-columns:14px 1fr auto;
       align-items:center;
       gap:10px;
       padding:9px 10px;
-      min-height:40px;
       border-bottom:1px solid rgba(255,255,255,.06);
       cursor:pointer;
       user-select:none;
@@ -240,25 +227,22 @@
       gap:8px;
     }
     .meterBox{
-      width:100%;
-      height:16px;
+      width:24px;
+      height:180px;
       border:1px solid rgba(255,255,255,.16);
       border-radius:8px;
-      background:linear-gradient(90deg,rgba(255,255,255,.06),rgba(0,0,0,.24));
+      background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.24));
       overflow:hidden;
       position:relative;
     }
     .meterFill{
       position:absolute;
-      inset:0;
-      width:100%;
-      height:100%;
-      transform-origin:right center;
-      transform:scaleX(0);
-      background:linear-gradient(90deg,#ff8c8c,#ff5b5b 60%,#cf2d2d);
-      transition:transform .08s linear;
+      left:0;right:0;bottom:0;
+      height:0%;
+      background:linear-gradient(180deg,#ff8c8c,#ff5b5b 60%,#cf2d2d);
+      transition:height .08s linear;
     }
-    .meterTxt{font-size:11px;color:var(--muted);text-align:left;line-height:1.2;}
+    .meterTxt{font-size:11px;color:var(--muted);text-align:center;line-height:1.2;}
 
     .togRow{display:flex;align-items:center;justify-content:space-between;gap:8px;}
     .small{font-size:12px;color:var(--muted);}
@@ -390,7 +374,7 @@
       background:rgba(0,0,0,.16);
       padding:8px;
       display:grid;
-      grid-template-columns:72px 160px;
+      grid-template-columns:52px 140px;
       align-items:center;
       gap:8px;
     }
@@ -407,21 +391,6 @@
       width:0%;
       background:linear-gradient(90deg,#6be2ff,#7cffb2);
       transition:width .08s linear;
-    }
-    .grBar{
-      height:8px;
-      border:1px solid rgba(255,255,255,.18);
-      border-radius:999px;
-      overflow:hidden;
-      background:rgba(255,255,255,.06);
-    }
-    .grBar > div{
-      width:100%;
-      height:100%;
-      transform-origin:right center;
-      transform:scaleX(0);
-      background:linear-gradient(90deg,#ff8c8c,#ff5b5b 60%,#cf2d2d);
-      transition:transform .08s linear;
     }
 
     .overlay{
@@ -451,12 +420,12 @@
       .content{grid-template-columns:1fr;}
       .cubePanel{order:1;min-height:50vh;}
       .sidePanel{order:2;max-height:46vh;}
-      .stemListWrap{min-height:180px;max-height:34vh;}
-      #stemList{height:180px;min-height:120px;}
+      #stemList{max-height:190px;}
       .rackGrid{grid-template-columns:1fr;}
       .meterCol{flex-direction:row;align-items:center;justify-content:space-between;}
+      .meterBox{height:32px;width:100%;}
+      .meterFill{height:100%;width:0%;left:0;right:auto;bottom:0;transition:width .08s linear;}
       .meterTxt{text-align:left;}
-      .masterWrap{grid-template-columns:72px 1fr;}
     }
   </style>
 </head>
@@ -472,7 +441,7 @@
         <input id="fileInput" type="file" accept=".wav,audio/wav" multiple style="display:none" />
         <span>Load WAV stems…</span>
       </label>
-      <button id="viewBtn" class="btn">View: FRONT</button>
+      <button id="viewBtn" class="btn">View: Front</button>
     </div>
   </header>
 
@@ -633,11 +602,6 @@
           <input id="masterVol" type="range" min="-24" max="6" step="0.1" value="0" />
           <div class="masterMeter"><div id="masterFill"></div></div>
         </div>
-        <div class="small">Limiter GR</div>
-        <div>
-          <div class="grBar"><div id="masterGrFill"></div></div>
-          <div class="small value" id="masterGrText">0.0 dB</div>
-        </div>
       </div>
     </div>
   </footer>
@@ -661,10 +625,6 @@
   // ---------- helpers ----------
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
   const lerp = (a, b, t) => a + (b - a) * t;
-  const lerpAngle = (a, b, t) => {
-    const d = ((((b - a) + Math.PI) % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2) - Math.PI;
-    return a + d * t;
-  };
   const dbToGain = (db) => Math.pow(10, db / 20);
   const gainToDb = (g) => 20 * Math.log10(Math.max(g, 1e-8));
   const fmt = (n, d = 1) => Number.isFinite(n) ? n.toFixed(d) : "-inf";
@@ -689,12 +649,7 @@
   const MODE_IDX = { compressor: 0, limiter: 1, gate: 2, expander: 3 };
   const MODE_LABEL = { compressor: "Compressor", limiter: "Limiter", gate: "Gate", expander: "Expander" };
   const COMP_RATIOS = [1, 1.5, 2, 3, 4, 6, 8, 12, 20];
-  const EXP_RATIOS = [1, 1.5, 2, 4, 8, 12, 20];
-  const VIEW_MODES = [
-    { key: "front", label: "FRONT", rot: { x: 0, y: 0, z: 0 } },
-    { key: "horizontal", label: "HORIZONTAL", rot: { x: 0, y: Math.PI * 0.5, z: 0 } },
-    { key: "vertical", label: "VERTICAL", rot: { x: -Math.PI * 0.5, y: 0, z: 0 } },
-  ];
+  const EXP_RATIOS = [2, 4, 8, 12, 20];
 
   // ---------- ui ----------
   const ui = {
@@ -755,8 +710,6 @@
     timeTxt: document.getElementById("timeTxt"),
     masterVol: document.getElementById("masterVol"),
     masterFill: document.getElementById("masterFill"),
-    masterGrFill: document.getElementById("masterGrFill"),
-    masterGrText: document.getElementById("masterGrText"),
 
     tapOverlay: document.getElementById("tapOverlay"),
     enableAudioBtn: document.getElementById("enableAudioBtn"),
@@ -767,10 +720,7 @@
     audioCtx: null,
     masterBus: null,
     masterGain: null,
-    masterLimiter: null,
     masterAnalyser: null,
-    masterLimiterGrDb: 0,
-    masterLimiterGrSmooth: 0,
     workletLoaded: false,
     useScriptFallback: false,
 
@@ -784,8 +734,7 @@
     startTime: 0,
     offsetAtStart: 0,
 
-    viewIndex: 0,
-    viewTargetRot: { x: 0, y: 0, z: 0 },
+    view: "front",
 
     showGhost: true,
 
@@ -1021,6 +970,14 @@
     state.masterGain = state.audioCtx.createGain();
     state.masterGain.gain.value = dbToGain(Number(ui.masterVol.value || 0));
 
+    state.masterAnalyser = state.audioCtx.createAnalyser();
+    state.masterAnalyser.fftSize = 512;
+    state.masterAnalyser.smoothingTimeConstant = 0.75;
+
+    state.masterBus.connect(state.masterGain);
+    state.masterGain.connect(state.masterAnalyser);
+    state.masterAnalyser.connect(state.audioCtx.destination);
+
     try {
       if (state.audioCtx.audioWorklet && window.AudioWorkletNode){
         const blobUrl = URL.createObjectURL(new Blob([WORKLET_CODE], { type: "application/javascript" }));
@@ -1039,21 +996,6 @@
       ui.dspTag.textContent = "DSP: ScriptProcessor fallback";
       log("AudioWorklet unavailable, using fallback.");
     }
-
-    state.masterLimiter = createMasterLimiterNode(state.audioCtx);
-
-    state.masterAnalyser = state.audioCtx.createAnalyser();
-    state.masterAnalyser.fftSize = 512;
-    state.masterAnalyser.smoothingTimeConstant = 0.75;
-
-    state.masterBus.connect(state.masterGain);
-    if (state.masterLimiter){
-      state.masterGain.connect(state.masterLimiter.in);
-      state.masterLimiter.out.connect(state.masterAnalyser);
-    } else {
-      state.masterGain.connect(state.masterAnalyser);
-    }
-    state.masterAnalyser.connect(state.audioCtx.destination);
 
     state.audioCtx.onstatechange = updateAudioPill;
     updateAudioPill();
@@ -1168,47 +1110,6 @@
         try { output.disconnect(); } catch {}
       }
     };
-  }
-
-  function createMasterLimiterNode(ctx){
-    if (!ctx) return null;
-
-    if (state.workletLoaded){
-      const node = new AudioWorkletNode(ctx, "dynamics-processor", {
-        numberOfInputs: 1,
-        numberOfOutputs: 1,
-        outputChannelCount: [2],
-      });
-      const now = ctx.currentTime;
-      node.parameters.get("mode").setValueAtTime(MODE_IDX.limiter, now);
-      node.parameters.get("threshold").setValueAtTime(0, now);
-      node.parameters.get("ratio").setValueAtTime(40, now);
-      node.parameters.get("makeup").setValueAtTime(0, now);
-      node.parameters.get("bypass").setValueAtTime(0, now);
-      node.port.onmessage = (e) => {
-        const d = e.data || {};
-        state.masterLimiterGrDb = Math.max(0, Number(d.grDb || 0));
-      };
-      return {
-        in: node,
-        out: node,
-        disconnect(){
-          try { node.disconnect(); } catch {}
-        }
-      };
-    }
-
-    const dyn = createScriptDynamicsNode(ctx, (meter) => {
-      state.masterLimiterGrDb = Math.max(0, Number(meter?.grDb || 0));
-    });
-    dyn.setParams({
-      mode: MODE_IDX.limiter,
-      threshold: 0,
-      ratio: 40,
-      makeup: 0,
-      bypass: 0,
-    });
-    return dyn;
   }
 
   function getStemRatioForMode(stem){
@@ -1346,8 +1247,6 @@
   function applyAudibility(){
     const soloOn = anySolo();
     ui.soloPill.classList.toggle("hidden", !soloOn);
-    ui.clearSoloBtn.disabled = !soloOn;
-    ui.clearSoloBtn.style.opacity = soloOn ? "1" : "0.55";
 
     const now = state.audioCtx ? state.audioCtx.currentTime : 0;
     state.stems.forEach((stem, idx) => {
@@ -1464,7 +1363,6 @@
       id: `${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 7)}`,
       name,
       color,
-      baseColor: new THREE.Color(color),
       buffer,
       analysis,
       wave,
@@ -1517,10 +1415,6 @@
     state.selected = -1;
     state.duration = 0;
     state.position = 0;
-    state.masterLimiterGrDb = 0;
-    state.masterLimiterGrSmooth = 0;
-    if (ui.masterGrFill) ui.masterGrFill.style.transform = "scaleX(0)";
-    if (ui.masterGrText) ui.masterGrText.textContent = "0.0 dB";
     rebuildStemList();
     rebuildScene();
     syncSelectedUI();
@@ -1608,16 +1502,6 @@
   function rebuildStemList(){
     ui.stemList.innerHTML = "";
     ui.stemCount.textContent = `${state.stems.length} loaded`;
-
-    if (!state.stems.length){
-      const empty = document.createElement("div");
-      empty.className = "small";
-      empty.style.padding = "12px";
-      empty.textContent = "No stems loaded.";
-      ui.stemList.appendChild(empty);
-      applyAudibility();
-      return;
-    }
 
     state.stems.forEach((stem, idx) => {
       const row = document.createElement("div");
@@ -1809,11 +1693,8 @@
   light.position.set(2, 3, 3);
   scene.add(light);
 
-  const mixGroup = new THREE.Group();
-  scene.add(mixGroup);
-
   const cubeGroup = new THREE.Group();
-  mixGroup.add(cubeGroup);
+  scene.add(cubeGroup);
 
   const cubeGeo = new THREE.BoxGeometry(2, 2, 2);
   const edges = new THREE.EdgesGeometry(cubeGeo);
@@ -1829,29 +1710,29 @@
   cubeGroup.add(floor);
 
   const bubbleGroup = new THREE.Group();
-  mixGroup.add(bubbleGroup);
+  scene.add(bubbleGroup);
   const bubbleMeshes = [];
 
   const ghostMesh = new THREE.Mesh(
-    new THREE.SphereGeometry(0.09, 24, 24),
+    new THREE.SphereGeometry(0.074, 18, 18),
     new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.24, roughness: 0.4, metalness: 0 })
   );
   ghostMesh.visible = false;
-  mixGroup.add(ghostMesh);
+  scene.add(ghostMesh);
 
   const thresholdWall = new THREE.Mesh(
     new THREE.PlaneGeometry(2.02, 2.02),
     new THREE.MeshBasicMaterial({ color: 0xffb86b, transparent: true, opacity: 0.16, side: THREE.DoubleSide })
   );
   thresholdWall.visible = false;
-  mixGroup.add(thresholdWall);
+  scene.add(thresholdWall);
 
   const wallBorder = new THREE.LineSegments(
     new THREE.EdgesGeometry(new THREE.PlaneGeometry(2.02, 2.02)),
     new THREE.LineBasicMaterial({ color: 0xffb86b, transparent: true, opacity: 0.58 })
   );
   wallBorder.visible = false;
-  mixGroup.add(wallBorder);
+  scene.add(wallBorder);
 
   const grArrow = new THREE.ArrowHelper(
     new THREE.Vector3(0, 0, -1),
@@ -1862,81 +1743,12 @@
     0.04
   );
   grArrow.visible = false;
-  mixGroup.add(grArrow);
+  scene.add(grArrow);
 
-  const quietGray = new THREE.Color(0x7e7e7e);
-  const bubbleTmpColor = new THREE.Color();
-
-  function makeTextSprite(text, opts = {}){
-    const c = document.createElement("canvas");
-    c.width = 512;
-    c.height = 128;
-    const ctx = c.getContext("2d");
-    const tex = new THREE.CanvasTexture(c);
-    tex.minFilter = THREE.LinearFilter;
-    tex.magFilter = THREE.LinearFilter;
-    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
-    const spr = new THREE.Sprite(mat);
-    spr.scale.set(opts.w ?? 0.82, opts.h ?? 0.2, 1);
-    spr.userData.canvas = c;
-    spr.userData.ctx = ctx;
-    spr.userData.tex = tex;
-    spr.userData.opts = opts;
-    setTextSpriteText(spr, text);
-    return spr;
-  }
-
-  function setTextSpriteText(sprite, text){
-    const c = sprite.userData.canvas;
-    const ctx = sprite.userData.ctx;
-    const tex = sprite.userData.tex;
-    const opts = sprite.userData.opts || {};
-    const fg = opts.fg || "rgba(231,238,249,.98)";
-    const bg = opts.bg || "rgba(10,14,22,.62)";
-    const border = opts.border || "rgba(255,255,255,.18)";
-    const px = opts.px || 44;
-
-    ctx.clearRect(0, 0, c.width, c.height);
-    ctx.fillStyle = bg;
-    ctx.strokeStyle = border;
-    ctx.lineWidth = 4;
-
-    const rx = 12;
-    const ry = 18;
-    const rw = c.width - 24;
-    const rh = c.height - 36;
-    const rr = 18;
-    ctx.beginPath();
-    ctx.moveTo(rx + rr, ry);
-    ctx.arcTo(rx + rw, ry, rx + rw, ry + rh, rr);
-    ctx.arcTo(rx + rw, ry + rh, rx, ry + rh, rr);
-    ctx.arcTo(rx, ry + rh, rx, ry, rr);
-    ctx.arcTo(rx, ry, rx + rw, ry, rr);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = fg;
-    ctx.font = `700 ${px}px system-ui`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(text, c.width / 2, c.height / 2 + 2);
-    tex.needsUpdate = true;
-  }
-
-  const loudLabel = makeTextSprite("0 dB (LOUD)", { w: 0.95, h: 0.22, px: 38 });
-  loudLabel.position.set(0.0, 1.14, 1.04);
-  mixGroup.add(loudLabel);
-
-  const quietLabel = makeTextSprite("-∞ (QUIET)", { w: 0.95, h: 0.22, px: 38 });
-  quietLabel.position.set(0.0, -1.14, -1.04);
-  mixGroup.add(quietLabel);
-
-  const wallLabel = makeTextSprite("THRESH -24.0 dBFS", {
-    w: 1.08, h: 0.23, px: 34, fg: "rgba(255,218,170,.98)", border: "rgba(255,184,107,.42)"
-  });
-  wallLabel.visible = false;
-  mixGroup.add(wallLabel);
+  const VIEW_POS = {
+    front: new THREE.Vector3(0, 0, 3.2),
+    angled: new THREE.Vector3(1.75, 0.95, 3.05),
+  };
 
   function posToScene(x, y, z){
     return new THREE.Vector3(clamp(x, -1, 1), clamp(y, -1, 1), clamp(z, 0, 1) * 2 - 1);
@@ -1968,7 +1780,6 @@
     state.stems.forEach((stem, idx) => {
       const z = dbToStemZ(stem, stem.proc.bypass ? stem.meter.preDb : stem.meter.postDb);
       const mesh = makeBubble(stem.color);
-      mesh.userData.baseColor = stem.baseColor.clone();
       mesh.position.copy(posToScene(stem.pos.x, stem.pos.y, z));
       mesh.userData.idx = idx;
       bubbleGroup.add(mesh);
@@ -1983,7 +1794,7 @@
       if (!mesh) return;
       const sel = idx === state.selected;
       mesh.scale.setScalar(sel ? 1.3 : 1.0);
-      mesh.material.emissiveIntensity = sel ? 0.42 : 0.22;
+      mesh.material.emissiveIntensity = sel ? 0.42 : 0.25;
     });
   }
 
@@ -2002,11 +1813,6 @@
   let dragIdx = -1;
   const dragPlane = new THREE.Plane();
   const dragOffset = new THREE.Vector3();
-  const dragWorldNormal = new THREE.Vector3();
-  const dragWorldPos = new THREE.Vector3();
-  const dragHitWorld = new THREE.Vector3();
-  const dragLocalPos = new THREE.Vector3();
-  const tmpQuat = new THREE.Quaternion();
 
   function setPointerFromEvent(e){
     const rect = ui.threeCanvas.getBoundingClientRect();
@@ -2035,15 +1841,13 @@
     dragIdx = idx;
 
     const mesh = bubbleMeshes[idx];
-    mixGroup.getWorldQuaternion(tmpQuat);
-    dragWorldNormal.set(0, 0, 1).applyQuaternion(tmpQuat).normalize();
-    mesh.getWorldPosition(dragWorldPos);
-    dragPlane.setFromNormalAndCoplanarPoint(dragWorldNormal, dragWorldPos);
+    dragPlane.setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, mesh.position.z));
 
     setPointerFromEvent(e);
     raycaster.setFromCamera(pointer, camera);
-    raycaster.ray.intersectPlane(dragPlane, dragHitWorld);
-    dragOffset.copy(dragWorldPos).sub(dragHitWorld);
+    const hp = new THREE.Vector3();
+    raycaster.ray.intersectPlane(dragPlane, hp);
+    dragOffset.copy(mesh.position).sub(hp);
 
     ui.threeCanvas.setPointerCapture?.(e.pointerId);
   }
@@ -2056,13 +1860,12 @@
 
     setPointerFromEvent(e);
     raycaster.setFromCamera(pointer, camera);
-    if (!raycaster.ray.intersectPlane(dragPlane, dragHitWorld)) return;
+    const hp = new THREE.Vector3();
+    if (!raycaster.ray.intersectPlane(dragPlane, hp)) return;
 
-    dragHitWorld.add(dragOffset);
-    dragLocalPos.copy(dragHitWorld);
-    bubbleGroup.worldToLocal(dragLocalPos);
-    stem.pos.x = clamp(dragLocalPos.x, -1, 1);
-    stem.pos.y = clamp(dragLocalPos.y, -1, 1);
+    hp.add(dragOffset);
+    stem.pos.x = clamp(hp.x, -1, 1);
+    stem.pos.y = clamp(hp.y, -1, 1);
 
     applyStemSpatial(stem);
     syncSelectedUI();
@@ -2265,18 +2068,9 @@
     ui.loopBtn.classList.toggle("primary", state.loop);
   });
 
-  function setViewMode(nextIndex){
-    const idx = ((nextIndex % VIEW_MODES.length) + VIEW_MODES.length) % VIEW_MODES.length;
-    state.viewIndex = idx;
-    const mode = VIEW_MODES[idx];
-    state.viewTargetRot.x = mode.rot.x;
-    state.viewTargetRot.y = mode.rot.y;
-    state.viewTargetRot.z = mode.rot.z;
-    ui.viewBtn.textContent = `View: ${mode.label}`;
-  }
-
   ui.viewBtn.addEventListener("click", () => {
-    setViewMode(state.viewIndex + 1);
+    state.view = state.view === "front" ? "angled" : "front";
+    ui.viewBtn.textContent = `View: ${state.view === "front" ? "Front" : "Angled"}`;
   });
 
   ui.clearSoloBtn.addEventListener("click", () => {
@@ -2379,11 +2173,6 @@
   // ---------- animation ----------
   const masterTmp = new Float32Array(512);
 
-  function setRightToLeftFill(el, amount01){
-    const x = clamp(amount01, 0, 1);
-    el.style.transform = `scaleX(${x.toFixed(4)})`;
-  }
-
   function updateMasterMeter(){
     if (!state.masterAnalyser) return;
     state.masterAnalyser.getFloatTimeDomainData(masterTmp);
@@ -2393,11 +2182,6 @@
     const db = gainToDb(rms || 1e-8);
     const pct = clamp((db + 60) / 60, 0, 1) * 100;
     ui.masterFill.style.width = `${pct.toFixed(1)}%`;
-
-    state.masterLimiterGrSmooth = lerp(state.masterLimiterGrSmooth, state.masterLimiterGrDb, 0.22);
-    const limAmt = clamp(state.masterLimiterGrSmooth / 24, 0, 1);
-    setRightToLeftFill(ui.masterGrFill, limAmt);
-    ui.masterGrText.textContent = `${fmt(state.masterLimiterGrSmooth, 1)} dB`;
   }
 
   function updateCubeAndHud(){
@@ -2417,6 +2201,7 @@
       if (i === state.selected){
         const wallZ = dbToStemZ(stem, stem.proc.thresholdDb);
         if (stem.proc.mode === "limiter") postZ = Math.min(postZ, wallZ);
+        if (stem.proc.mode === "gate") postZ = Math.max(postZ, wallZ);
       }
 
       const drawZ = stem.proc.bypass ? preZ : postZ;
@@ -2426,12 +2211,6 @@
       const level = clamp(drawZ, 0, 1);
       const baseScale = i === state.selected ? 1.3 : 1.0;
       mesh.scale.setScalar(baseScale * (1 + level * 0.35));
-
-      const effectAmount = stem.proc.bypass ? 0 : clamp(stem.meter.grDb / 12, 0, 1);
-      bubbleTmpColor.copy(stem.baseColor).lerp(quietGray, effectAmount);
-      mesh.material.color.copy(bubbleTmpColor);
-      mesh.material.emissive.copy(bubbleTmpColor);
-      mesh.material.emissiveIntensity = i === state.selected ? 0.42 : 0.22;
     }
 
     if (!stemSel){
@@ -2439,12 +2218,15 @@
       wallBorder.visible = false;
       ghostMesh.visible = false;
       grArrow.visible = false;
-      wallLabel.visible = false;
       ui.hudPre.textContent = "—";
       ui.hudPost.textContent = "—";
       ui.hudGr.textContent = "—";
       ui.grText.textContent = "0.0 dB";
-      setRightToLeftFill(ui.grFill, 0);
+      if (window.matchMedia("(max-width: 980px)").matches) {
+        ui.grFill.style.width = "0%";
+      } else {
+        ui.grFill.style.height = "0%";
+      }
       return;
     }
 
@@ -2455,18 +2237,14 @@
     let postZ = dbToStemZ(stemSel, postDbReal);
 
     if (stemSel.proc.mode === "limiter") postZ = Math.min(postZ, wallZ);
+    if (stemSel.proc.mode === "gate") postZ = Math.max(postZ, wallZ);
 
     thresholdWall.visible = true;
     wallBorder.visible = true;
     thresholdWall.position.z = wallZ * 2 - 1;
     wallBorder.position.z = wallZ * 2 - 1;
-    wallLabel.visible = true;
-    wallLabel.position.set(0.82, 0.92, wallZ * 2 - 1);
-    const wallTxt = `THRESH ${fmt(stemSel.proc.thresholdDb, 1)} dBFS`;
-    if (wallLabel.userData.lastText !== wallTxt){
-      setTextSpriteText(wallLabel, wallTxt);
-      wallLabel.userData.lastText = wallTxt;
-    }
+
+    const selPos = posToScene(stemSel.pos.x, stemSel.pos.y, 0);
 
     const prePos = posToScene(stemSel.pos.x, stemSel.pos.y, dbToStemZ(stemSel, preDb));
     const postPos = posToScene(stemSel.pos.x, stemSel.pos.y, stemSel.proc.bypass ? dbToStemZ(stemSel, preDb) : postZ);
@@ -2475,8 +2253,6 @@
     ghostMesh.visible = showGhost;
     if (showGhost){
       ghostMesh.position.copy(prePos);
-      const ghostLevel = clamp(dbToStemZ(stemSel, preDb), 0, 1);
-      ghostMesh.scale.setScalar(1.3 * (1 + ghostLevel * 0.35));
     }
 
     const grDb = Math.max(0, preDb - postDbReal);
@@ -2485,9 +2261,14 @@
     ui.hudGr.textContent = `${fmt(grDb, 1)} dB`;
 
     ui.grText.textContent = `${fmt(grDb, 1)} dB`;
-    setRightToLeftFill(ui.grFill, clamp(grDb / 24, 0, 1));
+    const meterPct = clamp(grDb / 24, 0, 1) * 100;
+    if (window.matchMedia("(max-width: 980px)").matches) {
+      ui.grFill.style.width = `${meterPct.toFixed(1)}%`;
+    } else {
+      ui.grFill.style.height = `${meterPct.toFixed(1)}%`;
+    }
 
-    const dz = Math.max(0, prePos.z - postPos.z);
+    const dz = prePos.z - postPos.z;
     if (!stemSel.proc.bypass && dz > 0.01){
       grArrow.visible = true;
       grArrow.position.set(prePos.x, prePos.y + 0.12, prePos.z);
@@ -2508,10 +2289,7 @@
 
     ui.timeTxt.textContent = mmss(state.position);
 
-    mixGroup.rotation.x = lerpAngle(mixGroup.rotation.x, state.viewTargetRot.x, 0.11);
-    mixGroup.rotation.y = lerpAngle(mixGroup.rotation.y, state.viewTargetRot.y, 0.11);
-    mixGroup.rotation.z = lerpAngle(mixGroup.rotation.z, state.viewTargetRot.z, 0.11);
-
+    camera.position.lerp(VIEW_POS[state.view], 0.09);
     camera.lookAt(0, 0, 0);
 
     updateCubeAndHud();
@@ -2530,9 +2308,6 @@
     ui.hudMode.textContent = "—";
     ui.hudThresh.textContent = "—";
     ui.hudBypass.textContent = "—";
-    setRightToLeftFill(ui.grFill, 0);
-    setRightToLeftFill(ui.masterGrFill, 0);
-    setViewMode(0);
 
     rebuildStemList();
     rebuildScene();
