@@ -1,0 +1,2553 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <title>Dynamics Cube (Stems)</title>
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --bg2:#151f31;
+      --panel:#0f1621cc;
+      --line:rgba(255,255,255,.11);
+      --text:#e7eef9;
+      --muted:#9fb0c6;
+      --accent:#66d9ff;
+      --accent2:#7cffb2;
+      --danger:#ff6b6b;
+      --warn:#ffb86b;
+      --shadow:0 10px 28px rgba(0,0,0,.4);
+      --radius:16px;
+      --font:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+    }
+    html,body{
+      height:100%;
+      margin:0;
+      background:radial-gradient(1200px 900px at 22% 8%, var(--bg2), var(--bg) 58%);
+      color:var(--text);
+      font-family:var(--font);
+      overflow:hidden;
+    }
+    button,input,select{font:inherit;color:inherit;}
+    .app{
+      height:100%;
+      display:grid;
+      grid-template-rows:auto 1fr auto;
+      min-height:0;
+    }
+    .topbar{
+      position:sticky;
+      top:0;
+      z-index:20;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      padding:12px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      backdrop-filter:blur(10px);
+      background:linear-gradient(180deg,rgba(15,22,33,.82),rgba(15,22,33,.35));
+    }
+    .brand{display:flex;flex-direction:column;gap:3px;}
+    .brand .title{font-size:15px;font-weight:800;letter-spacing:.2px;line-height:1;}
+    .brand .tag{font-size:12px;color:var(--muted);line-height:1.2;}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+    .btn{
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.06);
+      border-radius:12px;
+      padding:8px 10px;
+      cursor:pointer;
+      user-select:none;
+      touch-action:manipulation;
+      font-size:13px;
+      white-space:nowrap;
+      transition:background .12s,border-color .12s,transform .06s;
+    }
+    .btn:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.2);}
+    .btn:active{transform:translateY(1px);}
+    .btn.primary{background:rgba(102,217,255,.16);border-color:rgba(102,217,255,.36);}
+    .btn.warn{background:rgba(255,184,107,.14);border-color:rgba(255,184,107,.3);}
+    .btn.danger{background:rgba(255,107,107,.14);border-color:rgba(255,107,107,.3);}
+
+    .content{
+      min-height:0;
+      display:grid;
+      grid-template-columns:370px 1fr;
+      gap:12px;
+      padding:12px;
+    }
+    .panel{
+      min-height:0;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:var(--radius);
+      overflow:hidden;
+      backdrop-filter:blur(10px);
+      box-shadow:var(--shadow);
+      background:var(--panel);
+      display:flex;
+      flex-direction:column;
+    }
+    .panelHeader{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      padding:11px 12px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.03);
+      flex:0 0 auto;
+    }
+    .panelHeader .h{font-size:13px;font-weight:700;}
+    .panelHeader .sub{font-size:12px;color:var(--muted);}
+    .panelBody{
+      min-height:0;
+      overflow:auto;
+      -webkit-overflow-scrolling:touch;
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:999px;
+      background:rgba(0,0,0,.2);
+      color:var(--muted);
+      font-size:12px;
+    }
+    .dot{width:9px;height:9px;border-radius:50%;background:#999;flex:0 0 auto;}
+
+    .card{
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:rgba(0,0,0,.15);
+      padding:10px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .cardTitle{font-size:12px;font-weight:700;color:var(--muted);}
+
+    .stemListWrap{
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:rgba(0,0,0,.2);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      min-height:220px;
+      max-height:40vh;
+      flex:0 0 auto;
+    }
+    .stemHead{
+      padding:9px 10px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      background:rgba(255,255,255,.02);
+    }
+    .stemHead .left,
+    .stemHead .right{display:flex;align-items:center;gap:8px;}
+    #stemList{
+      flex:1 1 auto;
+      min-height:160px;
+      height:240px;
+      overflow-y:auto;
+      overflow-x:hidden;
+      -webkit-overflow-scrolling:touch;
+    }
+    .stemRow{
+      display:grid;
+      grid-template-columns:14px 1fr auto;
+      align-items:center;
+      gap:10px;
+      padding:9px 10px;
+      min-height:40px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      cursor:pointer;
+      user-select:none;
+      touch-action:manipulation;
+    }
+    .stemRow:last-child{border-bottom:none;}
+    .stemRow:hover{background:rgba(255,255,255,.04);}
+    .stemRow.selected{
+      background:rgba(102,217,255,.12);
+      outline:1px solid rgba(102,217,255,.24);
+    }
+    .stemRow.inactive{opacity:.55;}
+    .stemName{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .ms{display:flex;gap:6px;align-items:center;}
+    .msBtn{
+      width:30px;height:24px;
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:10px;
+      background:rgba(0,0,0,.2);
+      display:flex;align-items:center;justify-content:center;
+      font-size:12px;font-weight:750;
+      cursor:pointer;
+      user-select:none;
+      touch-action:manipulation;
+    }
+    .msBtn.m.on{background:rgba(255,107,107,.2);border-color:rgba(255,107,107,.4);}
+    .msBtn.s.on{background:rgba(102,217,255,.2);border-color:rgba(102,217,255,.4);}
+
+    .field{display:flex;flex-direction:column;gap:6px;}
+    .label{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;}
+    .select,
+    input[type="range"]{width:100%;}
+    .select{
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:10px;
+      padding:8px;
+      background:rgba(0,0,0,.26);
+      font-size:13px;
+      outline:none;
+    }
+
+    .seg{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:6px;
+    }
+    .seg button{
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.06);
+      border-radius:9px;
+      padding:7px 6px;
+      font-size:12px;
+      cursor:pointer;
+      touch-action:manipulation;
+    }
+    .seg button.on{background:rgba(102,217,255,.18);border-color:rgba(102,217,255,.38);}
+
+    .rackGrid{
+      display:grid;
+      grid-template-columns:1fr 58px;
+      gap:10px;
+      align-items:start;
+    }
+    .meterCol{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:8px;
+    }
+    .meterBox{
+      width:100%;
+      height:16px;
+      border:1px solid rgba(255,255,255,.16);
+      border-radius:8px;
+      background:linear-gradient(90deg,rgba(255,255,255,.06),rgba(0,0,0,.24));
+      overflow:hidden;
+      position:relative;
+    }
+    .meterFill{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      transform-origin:right center;
+      transform:scaleX(0);
+      background:linear-gradient(90deg,#ff8c8c,#ff5b5b 60%,#cf2d2d);
+      transition:transform .08s linear;
+    }
+    .meterTxt{font-size:11px;color:var(--muted);text-align:left;line-height:1.2;}
+
+    .togRow{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+    .small{font-size:12px;color:var(--muted);}
+    .value{font-variant-numeric:tabular-nums;}
+
+    details.adv{
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:10px;
+      overflow:hidden;
+      background:rgba(0,0,0,.14);
+    }
+    details.adv summary{
+      list-style:none;
+      cursor:pointer;
+      user-select:none;
+      padding:8px 9px;
+      font-size:12px;
+      font-weight:700;
+      color:var(--muted);
+    }
+    details.adv summary::-webkit-details-marker{display:none;}
+    .advInner{padding:0 9px 9px;display:flex;flex-direction:column;gap:8px;}
+
+    .waveWrap{
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:10px;
+      background:rgba(0,0,0,.18);
+      overflow:hidden;
+    }
+    #waveCanvas{
+      width:100%;
+      height:170px;
+      display:block;
+      touch-action:none;
+      cursor:pointer;
+      background:rgba(3,8,12,.5);
+    }
+    .waveMeta{
+      border-top:1px solid rgba(255,255,255,.08);
+      padding:8px;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      font-size:11px;
+      color:var(--muted);
+      flex-wrap:wrap;
+    }
+
+    .status{
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:10px;
+      background:rgba(0,0,0,.15);
+      padding:9px;
+      color:var(--muted);
+      font-size:12px;
+      min-height:58px;
+      max-height:120px;
+      overflow:auto;
+      white-space:pre-wrap;
+    }
+
+    .cubePanel{position:relative;}
+    #three{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      touch-action:none;
+    }
+    .cubeOverlay{
+      position:absolute;
+      left:10px;
+      top:10px;
+      z-index:2;
+      pointer-events:none;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      max-width:min(360px,calc(100vw - 40px));
+    }
+    .hudCard{
+      pointer-events:none;
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:12px;
+      background:rgba(15,22,33,.65);
+      backdrop-filter:blur(8px);
+      padding:9px 10px;
+      box-shadow:var(--shadow);
+    }
+    .hudTitle{font-size:13px;font-weight:700;}
+    .hudMeta{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.35;}
+    .hudGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px;}
+    .kv{
+      border:1px solid rgba(255,255,255,.09);
+      border-radius:8px;
+      background:rgba(0,0,0,.16);
+      padding:6px;
+    }
+    .kv .k{font-size:10px;color:var(--muted);}
+    .kv .v{font-size:12px;font-weight:700;margin-top:4px;}
+
+    .transport{
+      position:sticky;
+      bottom:0;
+      z-index:20;
+      border-top:1px solid rgba(255,255,255,.08);
+      backdrop-filter:blur(10px);
+      background:linear-gradient(0deg,rgba(15,22,33,.86),rgba(15,22,33,.35));
+      padding:10px 12px;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .tRow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .time{
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:999px;
+      background:rgba(0,0,0,.2);
+      padding:6px 10px;
+      color:var(--muted);
+      font-size:13px;
+      font-variant-numeric:tabular-nums;
+    }
+    .masterWrap{
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:10px;
+      background:rgba(0,0,0,.16);
+      padding:8px;
+      display:grid;
+      grid-template-columns:72px 160px;
+      align-items:center;
+      gap:8px;
+    }
+    .masterMeter{
+      height:8px;
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:999px;
+      overflow:hidden;
+      background:rgba(255,255,255,.06);
+      margin-top:4px;
+    }
+    .masterMeter > div{
+      height:100%;
+      width:0%;
+      background:linear-gradient(90deg,#6be2ff,#7cffb2);
+      transition:width .08s linear;
+    }
+    .grBar{
+      height:8px;
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:999px;
+      overflow:hidden;
+      background:rgba(255,255,255,.06);
+    }
+    .grBar > div{
+      width:100%;
+      height:100%;
+      transform-origin:right center;
+      transform:scaleX(0);
+      background:linear-gradient(90deg,#ff8c8c,#ff5b5b 60%,#cf2d2d);
+      transition:transform .08s linear;
+    }
+
+    .overlay{
+      position:fixed;
+      inset:0;
+      z-index:60;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      background:rgba(0,0,0,.65);
+      backdrop-filter:blur(8px);
+    }
+    .overlay.hidden{display:none;}
+    .overlay .card{
+      width:min(520px,calc(100vw - 28px));
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:16px;
+      background:rgba(15,22,33,.96);
+      padding:16px;
+    }
+    .overlay h2{margin:0 0 9px;font-size:17px;}
+    .overlay p{margin:0 0 12px;font-size:13px;color:var(--muted);line-height:1.35;}
+
+    .hidden{display:none !important;}
+
+    @media (max-width: 980px){
+      .content{grid-template-columns:1fr;}
+      .cubePanel{order:1;min-height:50vh;}
+      .sidePanel{order:2;max-height:46vh;}
+      .stemListWrap{min-height:180px;max-height:34vh;}
+      #stemList{height:180px;min-height:120px;}
+      .rackGrid{grid-template-columns:1fr;}
+      .meterCol{flex-direction:row;align-items:center;justify-content:space-between;}
+      .meterTxt{text-align:left;}
+      .masterWrap{grid-template-columns:72px 1fr;}
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="title">Dynamics Cube (Stems)</div>
+      <div class="tag">Pan on X, EQ tilt on Y, level on Z. Dynamics shown on selected stem.</div>
+    </div>
+    <div class="actions">
+      <label class="btn" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;">
+        <input id="fileInput" type="file" accept=".wav,audio/wav" multiple style="display:none" />
+        <span>Load WAV stems…</span>
+      </label>
+      <button id="viewBtn" class="btn">View: FRONT</button>
+    </div>
+  </header>
+
+  <main class="content">
+    <section class="panel sidePanel">
+      <div class="panelHeader">
+        <div>
+          <div class="h">Stem Mixer</div>
+          <div class="sub" id="stemCount">0 loaded</div>
+        </div>
+        <div class="pill" id="audioPill"><span class="dot" id="audioDot"></span><span id="audioTxt">Audio: off</span></div>
+      </div>
+
+      <div class="panelBody">
+        <div class="stemListWrap">
+          <div class="stemHead">
+            <div class="left">
+              <span class="small">Stems</span>
+              <span class="pill hidden" id="soloPill"><span class="dot" style="background:var(--accent)"></span><span>Solo active</span></span>
+            </div>
+            <div class="right">
+              <button id="clearSoloBtn" class="btn" style="padding:6px 8px;font-size:12px;">Clear Solo</button>
+            </div>
+          </div>
+          <div id="stemList"></div>
+        </div>
+
+        <div class="card">
+          <div class="cardTitle">Selected Stem Rack</div>
+          <div id="rackEmpty" class="small">Select a stem to edit dynamics and view details.</div>
+          <div id="rackBody" class="hidden">
+            <div class="rackGrid">
+              <div>
+                <div class="field">
+                  <div class="label"><span>Stem</span><span id="selName" class="value">—</span></div>
+                </div>
+
+                <div class="field">
+                  <div class="label"><span>Processor Mode</span><span id="modeLabel" class="value">Compressor</span></div>
+                  <div class="seg" id="modeSeg">
+                    <button data-mode="compressor" class="on">Comp</button>
+                    <button data-mode="limiter">Limit</button>
+                    <button data-mode="gate">Gate</button>
+                    <button data-mode="expander">Expand</button>
+                  </div>
+                </div>
+
+                <div class="field">
+                  <div class="label"><span>Threshold</span><span id="thresholdLabel" class="value">-24.0 dBFS</span></div>
+                  <input id="thresholdSlider" type="range" min="-60" max="0" step="0.1" value="-24" />
+                </div>
+
+                <div class="field">
+                  <div class="label"><span>Ratio</span><span id="ratioLabel" class="value">4:1</span></div>
+                  <select id="ratioSelect" class="select"></select>
+                </div>
+
+                <div class="field">
+                  <div class="label"><span>Makeup Gain</span><span id="makeupLabel" class="value">+0.0 dB</span></div>
+                  <input id="makeupSlider" type="range" min="0" max="12" step="0.1" value="0" />
+                </div>
+
+                <div class="field">
+                  <div class="label"><span>Pan (X)</span><span id="panLabel" class="value">0.00</span></div>
+                  <input id="panSlider" type="range" min="-1" max="1" step="0.01" value="0" />
+                </div>
+
+                <div class="field">
+                  <div class="label"><span>EQ Tilt (Y)</span><span id="tiltLabel" class="value">0.00</span></div>
+                  <input id="tiltSlider" type="range" min="-1" max="1" step="0.01" value="0" />
+                </div>
+
+                <div class="togRow">
+                  <button id="bypassBtn" class="btn">Bypass: Off</button>
+                  <label class="small" id="ghostRow">
+                    <input id="ghostCheck" type="checkbox" checked /> Show Ghost (Pre)
+                  </label>
+                </div>
+
+                <details class="adv">
+                  <summary>Advanced</summary>
+                  <div class="advInner">
+                    <div class="field">
+                      <div class="label"><span>Input Trim</span><span id="trimLabel" class="value">+0.0 dB</span></div>
+                      <input id="trimSlider" type="range" min="-12" max="12" step="0.1" value="0" />
+                    </div>
+                    <div class="small">Fixed attack/release are used in v1 (fast attack + fast release).</div>
+                  </div>
+                </details>
+              </div>
+
+              <div class="meterCol">
+                <div class="meterBox" id="grMeterBox"><div class="meterFill" id="grFill"></div></div>
+                <div class="meterTxt"><div>GR</div><div id="grText" class="value">0.0 dB</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cardTitle">Waveform (Selected Stem)</div>
+          <div class="waveWrap">
+            <canvas id="waveCanvas"></canvas>
+            <div class="waveMeta">
+              <span id="waveMetaLeft">No stem selected</span>
+              <span id="waveMetaRight">Tap/drag waveform to scrub</span>
+            </div>
+          </div>
+        </div>
+
+        <details class="adv" open>
+          <summary>Quick Help</summary>
+          <div class="advInner">
+            <div class="small"><b>X:</b> Pan left/right. <b>Y:</b> Tilt EQ low↔high. <b>Z:</b> Live signal level depth.</div>
+            <div class="small"><b>Threshold wall:</b> the selected stem’s threshold shown in the cube.</div>
+            <div class="small"><b>Ghost:</b> pre-dynamics level. Solid bubble shows post level (or pre when bypassed).</div>
+            <div class="small"><b>GR meter + red arrow:</b> how much level is reduced by dynamics.</div>
+          </div>
+        </details>
+
+        <div class="card">
+          <div class="label"><span>Status</span><span id="dspTag" class="small">DSP: loading</span></div>
+          <div class="status" id="statusLog">Load WAV stems from one session, then press Play.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel cubePanel" id="cubeWrap">
+      <canvas id="three"></canvas>
+      <div class="cubeOverlay">
+        <div class="hudCard">
+          <div class="hudTitle" id="hudTitle">No stem selected</div>
+          <div class="hudMeta" id="hudMeta">Tap a bubble or a stem row to focus controls and visualizations.</div>
+          <div class="hudGrid" id="hudGrid">
+            <div class="kv"><div class="k">PRE</div><div class="v" id="hudPre">—</div></div>
+            <div class="kv"><div class="k">POST</div><div class="v" id="hudPost">—</div></div>
+            <div class="kv"><div class="k">GR</div><div class="v" id="hudGr">—</div></div>
+            <div class="kv"><div class="k">MODE</div><div class="v" id="hudMode">—</div></div>
+            <div class="kv"><div class="k">THRESH</div><div class="v" id="hudThresh">—</div></div>
+            <div class="kv"><div class="k">BYPASS</div><div class="v" id="hudBypass">—</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="transport">
+    <div class="tRow">
+      <button id="playBtn" class="btn primary">Play</button>
+      <button id="restartBtn" class="btn">Restart</button>
+      <button id="loopBtn" class="btn primary">Loop: On</button>
+      <span class="time" id="timeTxt">00:00</span>
+    </div>
+    <div class="tRow">
+      <div class="masterWrap">
+        <div class="small">Master</div>
+        <div>
+          <input id="masterVol" type="range" min="-24" max="6" step="0.1" value="0" />
+          <div class="masterMeter"><div id="masterFill"></div></div>
+        </div>
+        <div class="small">Limiter GR</div>
+        <div>
+          <div class="grBar"><div id="masterGrFill"></div></div>
+          <div class="small value" id="masterGrText">0.0 dB</div>
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<div class="overlay" id="tapOverlay">
+  <div class="card">
+    <h2>Tap to enable audio</h2>
+    <p>Mobile browsers require a gesture before Web Audio can play. This app runs entirely client-side.</p>
+    <div style="display:flex;justify-content:flex-end;">
+      <button id="enableAudioBtn" class="btn primary">Enable Audio</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script>
+(() => {
+  "use strict";
+
+  // ---------- helpers ----------
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const lerpAngle = (a, b, t) => {
+    const d = ((((b - a) + Math.PI) % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2) - Math.PI;
+    return a + d * t;
+  };
+  const dbToGain = (db) => Math.pow(10, db / 20);
+  const gainToDb = (g) => 20 * Math.log10(Math.max(g, 1e-8));
+  const fmt = (n, d = 1) => Number.isFinite(n) ? n.toFixed(d) : "-inf";
+  const mmss = (sec) => {
+    sec = Math.max(0, sec || 0);
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+  };
+
+  function paletteColor(i){
+    const h = (i * 137.508) % 360;
+    return `hsl(${h} 72% 62%)`;
+  }
+
+  function stemNameFromFile(name){
+    const base = (name || "Stem").replace(/\.[^/.]+$/, "");
+    return base.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim() || "Stem";
+  }
+
+  // ---------- constants ----------
+  const MODE_IDX = { compressor: 0, limiter: 1, gate: 2, expander: 3 };
+  const MODE_LABEL = { compressor: "Compressor", limiter: "Limiter", gate: "Gate", expander: "Expander" };
+  const COMP_RATIOS = [1, 1.5, 2, 3, 4, 6, 8, 12, 20];
+  const EXP_RATIOS = [1, 1.5, 2, 4, 8, 12, 20];
+  const VIEW_MODES = [
+    { key: "front", label: "FRONT", rot: { x: 0, y: 0, z: 0 } },
+    { key: "horizontal", label: "HORIZONTAL", rot: { x: 0, y: Math.PI * 0.5, z: 0 } },
+    { key: "vertical", label: "VERTICAL", rot: { x: -Math.PI * 0.5, y: 0, z: 0 } },
+  ];
+
+  // ---------- ui ----------
+  const ui = {
+    fileInput: document.getElementById("fileInput"),
+    viewBtn: document.getElementById("viewBtn"),
+    stemCount: document.getElementById("stemCount"),
+    stemList: document.getElementById("stemList"),
+    soloPill: document.getElementById("soloPill"),
+    clearSoloBtn: document.getElementById("clearSoloBtn"),
+    statusLog: document.getElementById("statusLog"),
+    dspTag: document.getElementById("dspTag"),
+    audioDot: document.getElementById("audioDot"),
+    audioTxt: document.getElementById("audioTxt"),
+
+    rackEmpty: document.getElementById("rackEmpty"),
+    rackBody: document.getElementById("rackBody"),
+    selName: document.getElementById("selName"),
+    modeSeg: document.getElementById("modeSeg"),
+    modeLabel: document.getElementById("modeLabel"),
+    thresholdSlider: document.getElementById("thresholdSlider"),
+    thresholdLabel: document.getElementById("thresholdLabel"),
+    ratioSelect: document.getElementById("ratioSelect"),
+    ratioLabel: document.getElementById("ratioLabel"),
+    makeupSlider: document.getElementById("makeupSlider"),
+    makeupLabel: document.getElementById("makeupLabel"),
+    panSlider: document.getElementById("panSlider"),
+    panLabel: document.getElementById("panLabel"),
+    tiltSlider: document.getElementById("tiltSlider"),
+    tiltLabel: document.getElementById("tiltLabel"),
+    bypassBtn: document.getElementById("bypassBtn"),
+    ghostCheck: document.getElementById("ghostCheck"),
+    ghostRow: document.getElementById("ghostRow"),
+    trimSlider: document.getElementById("trimSlider"),
+    trimLabel: document.getElementById("trimLabel"),
+    grMeterBox: document.getElementById("grMeterBox"),
+    grFill: document.getElementById("grFill"),
+    grText: document.getElementById("grText"),
+
+    waveCanvas: document.getElementById("waveCanvas"),
+    waveMetaLeft: document.getElementById("waveMetaLeft"),
+    waveMetaRight: document.getElementById("waveMetaRight"),
+
+    hudTitle: document.getElementById("hudTitle"),
+    hudMeta: document.getElementById("hudMeta"),
+    hudPre: document.getElementById("hudPre"),
+    hudPost: document.getElementById("hudPost"),
+    hudGr: document.getElementById("hudGr"),
+    hudMode: document.getElementById("hudMode"),
+    hudThresh: document.getElementById("hudThresh"),
+    hudBypass: document.getElementById("hudBypass"),
+
+    cubeWrap: document.getElementById("cubeWrap"),
+    threeCanvas: document.getElementById("three"),
+
+    playBtn: document.getElementById("playBtn"),
+    restartBtn: document.getElementById("restartBtn"),
+    loopBtn: document.getElementById("loopBtn"),
+    timeTxt: document.getElementById("timeTxt"),
+    masterVol: document.getElementById("masterVol"),
+    masterFill: document.getElementById("masterFill"),
+    masterGrFill: document.getElementById("masterGrFill"),
+    masterGrText: document.getElementById("masterGrText"),
+
+    tapOverlay: document.getElementById("tapOverlay"),
+    enableAudioBtn: document.getElementById("enableAudioBtn"),
+  };
+
+  // ---------- app state ----------
+  const state = {
+    audioCtx: null,
+    masterBus: null,
+    masterGain: null,
+    masterLimiter: null,
+    masterAnalyser: null,
+    masterLimiterGrDb: 0,
+    masterLimiterGrSmooth: 0,
+    workletLoaded: false,
+    useScriptFallback: false,
+
+    stems: [],
+    selected: -1,
+
+    playing: false,
+    loop: true,
+    position: 0,
+    duration: 0,
+    startTime: 0,
+    offsetAtStart: 0,
+
+    viewIndex: 0,
+    viewTargetRot: { x: 0, y: 0, z: 0 },
+
+    showGhost: true,
+
+    waveCache: document.createElement("canvas"),
+    waveCacheDirty: true,
+    waveDrag: false,
+    waveResumeAfterDrag: false,
+
+    rafId: 0,
+  };
+
+  // ---------- status ----------
+  function log(msg){
+    const now = new Date();
+    const line = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}  ${msg}`;
+    const prev = ui.statusLog.textContent.trim();
+    const lines = prev ? prev.split("\n") : [];
+    lines.push(line);
+    ui.statusLog.textContent = lines.slice(-18).join("\n");
+    ui.statusLog.scrollTop = ui.statusLog.scrollHeight;
+  }
+
+  function updateAudioPill(){
+    const running = !!(state.audioCtx && state.audioCtx.state === "running");
+    ui.audioDot.style.background = running ? "#7cffb2" : "#999";
+    ui.audioTxt.textContent = running ? "Audio: on" : "Audio: off";
+    ui.tapOverlay.classList.toggle("hidden", running);
+  }
+
+  // ---------- analysis ----------
+  function analyzeBuffer(buffer){
+    const channels = buffer.numberOfChannels;
+    const length = buffer.length;
+    const sampleStep = Math.max(1, Math.floor(length / 700000));
+
+    let peak = 0;
+    let sumSq = 0;
+    let count = 0;
+
+    for (let ch = 0; ch < channels; ch++){
+      const data = buffer.getChannelData(ch);
+      for (let i = 0; i < length; i += sampleStep){
+        const v = data[i];
+        const a = Math.abs(v);
+        if (a > peak) peak = a;
+        sumSq += v * v;
+        count++;
+      }
+    }
+
+    const rms = count > 0 ? Math.sqrt(sumSq / count) : 0;
+    const peakDb = gainToDb(peak || 1e-8);
+    const rmsDb = gainToDb(rms || 1e-8);
+
+    const thresholdDb = clamp(peakDb - 12, -48, -8);
+    const zFloorDb = clamp(Math.min(-24, peakDb - 36), -72, -30);
+    const waveScale = clamp(0.92 / Math.max(peak, 0.02), 1, 10);
+
+    return { peak, rms, peakDb, rmsDb, thresholdDb, zFloorDb, waveScale };
+  }
+
+  function computeWavePeaks(buffer, bins = 1400){
+    const channels = buffer.numberOfChannels;
+    const length = buffer.length;
+    const peaks = new Float32Array(bins);
+    const peakDbs = new Float32Array(bins);
+
+    for (let i = 0; i < bins; i++){
+      const start = Math.floor(i * length / bins);
+      const end = Math.max(start + 1, Math.floor((i + 1) * length / bins));
+      let maxAbs = 0;
+      for (let ch = 0; ch < channels; ch++){
+        const data = buffer.getChannelData(ch);
+        for (let n = start; n < end; n++){
+          const a = Math.abs(data[n]);
+          if (a > maxAbs) maxAbs = a;
+        }
+      }
+      peaks[i] = maxAbs;
+      peakDbs[i] = gainToDb(maxAbs || 1e-8);
+    }
+
+    return { peaks, peakDbs };
+  }
+
+  function dbToStemZ(stem, db){
+    const floor = stem.analysis.zFloorDb;
+    return clamp((db - floor) / (0 - floor), 0, 1);
+  }
+
+  // ---------- audio engine ----------
+  const WORKLET_CODE = `
+    class DynamicsProcessor extends AudioWorkletProcessor {
+      static get parameterDescriptors(){
+        return [
+          { name: 'mode', defaultValue: 0, minValue: 0, maxValue: 3, automationRate: 'k-rate' },
+          { name: 'threshold', defaultValue: -24, minValue: -60, maxValue: 0, automationRate: 'k-rate' },
+          { name: 'ratio', defaultValue: 4, minValue: 1, maxValue: 40, automationRate: 'k-rate' },
+          { name: 'makeup', defaultValue: 0, minValue: 0, maxValue: 24, automationRate: 'k-rate' },
+          { name: 'bypass', defaultValue: 0, minValue: 0, maxValue: 1, automationRate: 'k-rate' }
+        ];
+      }
+
+      constructor(){
+        super();
+        this.envIn = 0;
+        this.envOut = 0;
+        this.gainDb = 0;
+        this.lastPreDb = -120;
+        this.lastPostDb = -120;
+        this.eps = 1e-9;
+
+        const sr = sampleRate;
+        this.envAttack = Math.exp(-1 / (sr * 0.005));
+        this.envRelease = Math.exp(-1 / (sr * 0.08));
+        this.gainAttack = Math.exp(-1 / (sr * 0.005));
+        this.gainRelease = Math.exp(-1 / (sr * 0.09));
+
+        this.meterEvery = Math.max(64, Math.floor(sr * 0.04));
+        this.meterCount = 0;
+      }
+
+      dbFromLin(v){
+        return 20 * Math.log10(Math.max(this.eps, v));
+      }
+      linFromDb(db){
+        return Math.pow(10, db / 20);
+      }
+
+      process(inputs, outputs, params){
+        const input = inputs[0];
+        const output = outputs[0];
+        if (!input || input.length === 0 || !output || output.length === 0){
+          return true;
+        }
+
+        const inL = input[0];
+        const inR = input[1] || input[0];
+        const outL = output[0];
+        const outR = output[1] || output[0];
+        const frames = inL.length;
+
+        const modeArr = params.mode;
+        const thrArr = params.threshold;
+        const ratioArr = params.ratio;
+        const makeupArr = params.makeup;
+        const bypassArr = params.bypass;
+
+        for (let i = 0; i < frames; i++){
+          const xL = inL[i] || 0;
+          const xR = inR[i] || 0;
+          const peakIn = Math.max(Math.abs(xL), Math.abs(xR));
+
+          const envCoeff = peakIn > this.envIn ? this.envAttack : this.envRelease;
+          this.envIn = envCoeff * this.envIn + (1 - envCoeff) * peakIn;
+          const preDb = this.dbFromLin(this.envIn);
+
+          const mode = Math.round(modeArr.length > 1 ? modeArr[i] : modeArr[0]);
+          const threshold = thrArr.length > 1 ? thrArr[i] : thrArr[0];
+          const ratio = Math.max(1, ratioArr.length > 1 ? ratioArr[i] : ratioArr[0]);
+          const makeup = makeupArr.length > 1 ? makeupArr[i] : makeupArr[0];
+          const bypass = (bypassArr.length > 1 ? bypassArr[i] : bypassArr[0]) >= 0.5;
+
+          let targetGainDb = 0;
+
+          if (!bypass){
+            if (mode === 0){
+              if (preDb > threshold){
+                const outDb = threshold + (preDb - threshold) / ratio;
+                targetGainDb = outDb - preDb;
+              }
+              targetGainDb += makeup;
+            } else if (mode === 1){
+              if (preDb > threshold){
+                targetGainDb = threshold - preDb;
+              }
+              targetGainDb += makeup;
+            } else if (mode === 2){
+              if (preDb < threshold){
+                targetGainDb = -60;
+              }
+            } else {
+              if (preDb < threshold){
+                targetGainDb = -((ratio - 1) * (threshold - preDb));
+                if (targetGainDb < -60) targetGainDb = -60;
+              }
+            }
+          }
+
+          const gCoeff = targetGainDb < this.gainDb ? this.gainAttack : this.gainRelease;
+          this.gainDb = gCoeff * this.gainDb + (1 - gCoeff) * targetGainDb;
+
+          let yL = xL;
+          let yR = xR;
+          if (!bypass){
+            const g = this.linFromDb(this.gainDb);
+            yL = xL * g;
+            yR = xR * g;
+          }
+
+          outL[i] = yL;
+          if (output.length > 1) outR[i] = yR;
+
+          const peakOut = Math.max(Math.abs(yL), Math.abs(yR));
+          const outCoeff = peakOut > this.envOut ? this.envAttack : this.envRelease;
+          this.envOut = outCoeff * this.envOut + (1 - outCoeff) * peakOut;
+
+          this.lastPreDb = preDb;
+          this.lastPostDb = this.dbFromLin(this.envOut);
+        }
+
+        this.meterCount += frames;
+        if (this.meterCount >= this.meterEvery){
+          this.meterCount = 0;
+          const grDb = Math.max(0, this.lastPreDb - this.lastPostDb);
+          this.port.postMessage({ preDb: this.lastPreDb, postDb: this.lastPostDb, grDb });
+        }
+
+        return true;
+      }
+    }
+
+    registerProcessor('dynamics-processor', DynamicsProcessor);
+  `;
+
+  async function ensureAudioContext(){
+    if (state.audioCtx) return state.audioCtx;
+
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    state.audioCtx = new Ctx({ latencyHint: "interactive" });
+
+    state.masterBus = state.audioCtx.createGain();
+    state.masterGain = state.audioCtx.createGain();
+    state.masterGain.gain.value = dbToGain(Number(ui.masterVol.value || 0));
+
+    try {
+      if (state.audioCtx.audioWorklet && window.AudioWorkletNode){
+        const blobUrl = URL.createObjectURL(new Blob([WORKLET_CODE], { type: "application/javascript" }));
+        await state.audioCtx.audioWorklet.addModule(blobUrl);
+        URL.revokeObjectURL(blobUrl);
+        state.workletLoaded = true;
+        state.useScriptFallback = false;
+        ui.dspTag.textContent = "DSP: AudioWorklet";
+      } else {
+        state.useScriptFallback = true;
+        ui.dspTag.textContent = "DSP: ScriptProcessor fallback";
+      }
+    } catch (err){
+      state.useScriptFallback = true;
+      state.workletLoaded = false;
+      ui.dspTag.textContent = "DSP: ScriptProcessor fallback";
+      log("AudioWorklet unavailable, using fallback.");
+    }
+
+    state.masterLimiter = createMasterLimiterNode(state.audioCtx);
+
+    state.masterAnalyser = state.audioCtx.createAnalyser();
+    state.masterAnalyser.fftSize = 512;
+    state.masterAnalyser.smoothingTimeConstant = 0.75;
+
+    state.masterBus.connect(state.masterGain);
+    if (state.masterLimiter){
+      state.masterGain.connect(state.masterLimiter.in);
+      state.masterLimiter.out.connect(state.masterAnalyser);
+    } else {
+      state.masterGain.connect(state.masterAnalyser);
+    }
+    state.masterAnalyser.connect(state.audioCtx.destination);
+
+    state.audioCtx.onstatechange = updateAudioPill;
+    updateAudioPill();
+    return state.audioCtx;
+  }
+
+  function createScriptDynamicsNode(ctx, onMeter){
+    const input = ctx.createGain();
+    const proc = ctx.createScriptProcessor(256, 2, 2);
+    const output = ctx.createGain();
+
+    input.connect(proc);
+    proc.connect(output);
+
+    const p = { mode: 0, threshold: -24, ratio: 4, makeup: 0, bypass: 0 };
+    let envIn = 0;
+    let envOut = 0;
+    let gainDb = 0;
+    let lastPre = -120;
+    let lastPost = -120;
+    let meterCount = 0;
+    const eps = 1e-9;
+
+    const sr = ctx.sampleRate;
+    const envAttack = Math.exp(-1 / (sr * 0.005));
+    const envRelease = Math.exp(-1 / (sr * 0.08));
+    const gainAttack = Math.exp(-1 / (sr * 0.005));
+    const gainRelease = Math.exp(-1 / (sr * 0.09));
+
+    proc.onaudioprocess = (e) => {
+      const inL = e.inputBuffer.getChannelData(0);
+      const inR = e.inputBuffer.numberOfChannels > 1 ? e.inputBuffer.getChannelData(1) : inL;
+      const outL = e.outputBuffer.getChannelData(0);
+      const outR = e.outputBuffer.numberOfChannels > 1 ? e.outputBuffer.getChannelData(1) : outL;
+
+      for (let i = 0; i < inL.length; i++){
+        const xL = inL[i] || 0;
+        const xR = inR[i] || 0;
+        const peakIn = Math.max(Math.abs(xL), Math.abs(xR));
+
+        const envCoeff = peakIn > envIn ? envAttack : envRelease;
+        envIn = envCoeff * envIn + (1 - envCoeff) * peakIn;
+        const preDb = 20 * Math.log10(Math.max(eps, envIn));
+
+        let targetGainDb = 0;
+        if (p.bypass < 0.5){
+          if (p.mode === 0){
+            if (preDb > p.threshold){
+              const outDb = p.threshold + (preDb - p.threshold) / Math.max(1, p.ratio);
+              targetGainDb = outDb - preDb;
+            }
+            targetGainDb += p.makeup;
+          } else if (p.mode === 1){
+            if (preDb > p.threshold){
+              targetGainDb = p.threshold - preDb;
+            }
+            targetGainDb += p.makeup;
+          } else if (p.mode === 2){
+            if (preDb < p.threshold){
+              targetGainDb = -60;
+            }
+          } else {
+            if (preDb < p.threshold){
+              targetGainDb = -((Math.max(1, p.ratio) - 1) * (p.threshold - preDb));
+              if (targetGainDb < -60) targetGainDb = -60;
+            }
+          }
+        }
+
+        const gCoeff = targetGainDb < gainDb ? gainAttack : gainRelease;
+        gainDb = gCoeff * gainDb + (1 - gCoeff) * targetGainDb;
+
+        let yL = xL;
+        let yR = xR;
+        if (p.bypass < 0.5){
+          const g = Math.pow(10, gainDb / 20);
+          yL = xL * g;
+          yR = xR * g;
+        }
+
+        outL[i] = yL;
+        outR[i] = yR;
+
+        const peakOut = Math.max(Math.abs(yL), Math.abs(yR));
+        const outCoeff = peakOut > envOut ? envAttack : envRelease;
+        envOut = outCoeff * envOut + (1 - outCoeff) * peakOut;
+
+        lastPre = preDb;
+        lastPost = 20 * Math.log10(Math.max(eps, envOut));
+      }
+
+      meterCount += inL.length;
+      if (meterCount >= sr * 0.04){
+        meterCount = 0;
+        onMeter({ preDb: lastPre, postDb: lastPost, grDb: Math.max(0, lastPre - lastPost) });
+      }
+    };
+
+    return {
+      in: input,
+      out: output,
+      setParams(next){
+        if (typeof next.mode === "number") p.mode = next.mode;
+        if (typeof next.threshold === "number") p.threshold = next.threshold;
+        if (typeof next.ratio === "number") p.ratio = next.ratio;
+        if (typeof next.makeup === "number") p.makeup = next.makeup;
+        if (typeof next.bypass === "number") p.bypass = next.bypass;
+      },
+      disconnect(){
+        try { input.disconnect(); } catch {}
+        try { proc.disconnect(); } catch {}
+        try { output.disconnect(); } catch {}
+      }
+    };
+  }
+
+  function createMasterLimiterNode(ctx){
+    if (!ctx) return null;
+
+    if (state.workletLoaded){
+      const node = new AudioWorkletNode(ctx, "dynamics-processor", {
+        numberOfInputs: 1,
+        numberOfOutputs: 1,
+        outputChannelCount: [2],
+      });
+      const now = ctx.currentTime;
+      node.parameters.get("mode").setValueAtTime(MODE_IDX.limiter, now);
+      node.parameters.get("threshold").setValueAtTime(0, now);
+      node.parameters.get("ratio").setValueAtTime(40, now);
+      node.parameters.get("makeup").setValueAtTime(0, now);
+      node.parameters.get("bypass").setValueAtTime(0, now);
+      node.port.onmessage = (e) => {
+        const d = e.data || {};
+        state.masterLimiterGrDb = Math.max(0, Number(d.grDb || 0));
+      };
+      return {
+        in: node,
+        out: node,
+        disconnect(){
+          try { node.disconnect(); } catch {}
+        }
+      };
+    }
+
+    const dyn = createScriptDynamicsNode(ctx, (meter) => {
+      state.masterLimiterGrDb = Math.max(0, Number(meter?.grDb || 0));
+    });
+    dyn.setParams({
+      mode: MODE_IDX.limiter,
+      threshold: 0,
+      ratio: 40,
+      makeup: 0,
+      bypass: 0,
+    });
+    return dyn;
+  }
+
+  function getStemRatioForMode(stem){
+    return stem.proc.mode === "expander" ? stem.proc.ratioExp : stem.proc.ratioComp;
+  }
+
+  function onStemMeter(stem, meter){
+    stem.meter.preDb = meter.preDb;
+    stem.meter.postDb = meter.postDb;
+    stem.meter.grDb = Math.max(0, meter.grDb);
+  }
+
+  function buildStemGraph(stem){
+    const ctx = state.audioCtx;
+    if (!ctx || !state.masterBus) return;
+
+    const trim = ctx.createGain();
+    const eqLow = ctx.createBiquadFilter();
+    const eqHigh = ctx.createBiquadFilter();
+    const panner = ctx.createStereoPanner();
+    const stemGain = ctx.createGain();
+
+    eqLow.type = "lowshelf";
+    eqLow.frequency.value = 250;
+    eqLow.gain.value = 0;
+
+    eqHigh.type = "highshelf";
+    eqHigh.frequency.value = 3500;
+    eqHigh.gain.value = 0;
+
+    stemGain.gain.value = 1;
+
+    let dyn = null;
+    if (state.workletLoaded){
+      const node = new AudioWorkletNode(ctx, "dynamics-processor", {
+        numberOfInputs: 1,
+        numberOfOutputs: 1,
+        outputChannelCount: [2],
+      });
+      node.port.onmessage = (e) => onStemMeter(stem, e.data || {});
+      dyn = {
+        type: "worklet",
+        in: node,
+        out: node,
+        setParams(next){
+          const now = ctx.currentTime;
+          if (typeof next.mode === "number") node.parameters.get("mode").setValueAtTime(next.mode, now);
+          if (typeof next.threshold === "number") node.parameters.get("threshold").setValueAtTime(next.threshold, now);
+          if (typeof next.ratio === "number") node.parameters.get("ratio").setValueAtTime(next.ratio, now);
+          if (typeof next.makeup === "number") node.parameters.get("makeup").setValueAtTime(next.makeup, now);
+          if (typeof next.bypass === "number") node.parameters.get("bypass").setValueAtTime(next.bypass, now);
+        },
+        disconnect(){
+          try { node.disconnect(); } catch {}
+        }
+      };
+    } else {
+      dyn = createScriptDynamicsNode(ctx, (meter) => onStemMeter(stem, meter));
+    }
+
+    trim.connect(eqLow);
+    eqLow.connect(eqHigh);
+    eqHigh.connect(panner);
+    panner.connect(dyn.in);
+    dyn.out.connect(stemGain);
+    stemGain.connect(state.masterBus);
+
+    stem.nodes = { trim, eqLow, eqHigh, panner, dyn, stemGain, src: null };
+
+    applyStemSpatial(stem);
+    applyStemTrim(stem);
+    applyStemProcessorParams(stem);
+  }
+
+  function applyStemSpatial(stem){
+    if (!stem.nodes || !stem.nodes.panner) return;
+    const x = clamp(stem.pos.x, -1, 1);
+    const y = clamp(stem.pos.y, -1, 1);
+
+    stem.nodes.panner.pan.setTargetAtTime(x, state.audioCtx.currentTime, 0.01);
+
+    const maxTilt = 12;
+    stem.nodes.eqLow.gain.setTargetAtTime(maxTilt * (-y), state.audioCtx.currentTime, 0.02);
+    stem.nodes.eqHigh.gain.setTargetAtTime(maxTilt * (y), state.audioCtx.currentTime, 0.02);
+  }
+
+  function applyStemTrim(stem){
+    if (!stem.nodes || !stem.nodes.trim) return;
+    stem.nodes.trim.gain.setTargetAtTime(dbToGain(stem.proc.inputTrimDb), state.audioCtx.currentTime, 0.015);
+  }
+
+  function applyStemProcessorParams(stem){
+    if (!stem.nodes || !stem.nodes.dyn) return;
+    const mode = MODE_IDX[stem.proc.mode];
+    const ratio = getStemRatioForMode(stem);
+    const makeup = (stem.proc.mode === "compressor" || stem.proc.mode === "limiter") ? stem.proc.makeupDb : 0;
+
+    stem.nodes.dyn.setParams({
+      mode,
+      threshold: stem.proc.thresholdDb,
+      ratio,
+      makeup,
+      bypass: stem.proc.bypass ? 1 : 0,
+    });
+  }
+
+  function stopSources(){
+    for (const stem of state.stems){
+      if (stem.nodes && stem.nodes.src){
+        try { stem.nodes.src.onended = null; stem.nodes.src.stop(0); } catch {}
+        try { stem.nodes.src.disconnect(); } catch {}
+        stem.nodes.src = null;
+      }
+    }
+  }
+
+  function computeDuration(){
+    let d = 0;
+    for (const stem of state.stems){
+      if (stem.buffer) d = Math.max(d, stem.buffer.duration || 0);
+    }
+    state.duration = d;
+  }
+
+  function anySolo(){
+    return state.stems.some((s) => s.solo);
+  }
+
+  function isStemAudible(stem){
+    const soloOn = anySolo();
+    if (soloOn) return stem.solo && !stem.muted;
+    return !stem.muted;
+  }
+
+  function applyAudibility(){
+    const soloOn = anySolo();
+    ui.soloPill.classList.toggle("hidden", !soloOn);
+    ui.clearSoloBtn.disabled = !soloOn;
+    ui.clearSoloBtn.style.opacity = soloOn ? "1" : "0.55";
+
+    const now = state.audioCtx ? state.audioCtx.currentTime : 0;
+    state.stems.forEach((stem, idx) => {
+      const audible = isStemAudible(stem);
+      if (stem.nodes && stem.nodes.stemGain){
+        stem.nodes.stemGain.gain.setTargetAtTime(audible ? 1 : 0, now, 0.015);
+      }
+      const row = ui.stemList.querySelector(`.stemRow[data-idx="${idx}"]`);
+      if (row) row.classList.toggle("inactive", !audible);
+      const mesh = bubbleMeshes[idx];
+      if (mesh){
+        mesh.material.opacity = audible ? 0.92 : 0.35;
+      }
+    });
+
+    if (soloOn){
+      const soloIdx = state.stems.findIndex((s) => s.solo);
+      if (soloIdx >= 0) selectStem(soloIdx);
+    }
+  }
+
+  async function startPlayback(){
+    await ensureAudioContext();
+    if (!state.audioCtx || state.stems.length === 0) return;
+    if (state.audioCtx.state !== "running"){
+      ui.tapOverlay.classList.remove("hidden");
+      return;
+    }
+
+    stopSources();
+    computeDuration();
+
+    const offset = clamp(state.position, 0, state.duration || 0);
+    const when = state.audioCtx.currentTime + 0.05;
+
+    let started = 0;
+    let ended = 0;
+
+    for (const stem of state.stems){
+      if (!stem.nodes || !stem.nodes.trim) continue;
+      const src = state.audioCtx.createBufferSource();
+      src.buffer = stem.buffer;
+      src.connect(stem.nodes.trim);
+
+      const remain = Math.max(0, (stem.buffer.duration || 0) - offset);
+      if (remain > 0.01){
+        started++;
+        src.onended = () => {
+          ended++;
+          if (!state.playing) return;
+          if (ended >= started){
+            if (state.loop){
+              state.position = 0;
+              state.playing = false;
+              ui.playBtn.textContent = "Play";
+              startPlayback();
+            } else {
+              state.playing = false;
+              state.position = state.duration;
+              ui.playBtn.textContent = "Play";
+            }
+          }
+        };
+
+        try { src.start(when, offset); } catch {}
+      }
+
+      stem.nodes.src = src;
+    }
+
+    if (!started){
+      state.playing = false;
+      ui.playBtn.textContent = "Play";
+      return;
+    }
+
+    state.playing = true;
+    state.startTime = when;
+    state.offsetAtStart = offset;
+    ui.playBtn.textContent = "Pause";
+  }
+
+  function pausePlayback(){
+    if (!state.playing || !state.audioCtx) return;
+    const elapsed = Math.max(0, state.audioCtx.currentTime - state.startTime);
+    state.position = clamp(state.offsetAtStart + elapsed, 0, state.duration || 0);
+    stopSources();
+    state.playing = false;
+    ui.playBtn.textContent = "Play";
+  }
+
+  function restartPlayback(){
+    state.position = 0;
+    if (state.playing){
+      pausePlayback();
+      startPlayback();
+    }
+  }
+
+  function seekTo(seconds){
+    state.position = clamp(seconds, 0, state.duration || 0);
+    if (state.playing){
+      pausePlayback();
+      startPlayback();
+    }
+  }
+
+  // ---------- stem model ----------
+  function makeStem({ name, buffer, color, idx }){
+    const analysis = analyzeBuffer(buffer);
+    const wave = computeWavePeaks(buffer, 1400);
+
+    return {
+      id: `${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 7)}`,
+      name,
+      color,
+      baseColor: new THREE.Color(color),
+      buffer,
+      analysis,
+      wave,
+
+      pos: {
+        x: clamp((Math.random() * 1.2) - 0.6, -1, 1),
+        y: clamp((Math.random() * 1.2) - 0.6, -1, 1),
+      },
+
+      muted: false,
+      solo: false,
+
+      proc: {
+        mode: "compressor",
+        thresholdDb: analysis.thresholdDb,
+        ratioComp: 4,
+        ratioExp: 4,
+        makeupDb: 0,
+        bypass: false,
+        inputTrimDb: 0,
+      },
+
+      meter: {
+        preDb: analysis.rmsDb,
+        postDb: analysis.rmsDb,
+        grDb: 0,
+        preSmooth: analysis.rmsDb,
+        postSmooth: analysis.rmsDb,
+      },
+
+      nodes: null,
+    };
+  }
+
+  async function clearProject(){
+    pausePlayback();
+    stopSources();
+    for (const stem of state.stems){
+      if (stem.nodes){
+        try { stem.nodes.trim.disconnect(); } catch {}
+        try { stem.nodes.eqLow.disconnect(); } catch {}
+        try { stem.nodes.eqHigh.disconnect(); } catch {}
+        try { stem.nodes.panner.disconnect(); } catch {}
+        try { stem.nodes.stemGain.disconnect(); } catch {}
+        try { stem.nodes.dyn.disconnect(); } catch {}
+      }
+      stem.nodes = null;
+    }
+    state.stems = [];
+    state.selected = -1;
+    state.duration = 0;
+    state.position = 0;
+    state.masterLimiterGrDb = 0;
+    state.masterLimiterGrSmooth = 0;
+    if (ui.masterGrFill) ui.masterGrFill.style.transform = "scaleX(0)";
+    if (ui.masterGrText) ui.masterGrText.textContent = "0.0 dB";
+    rebuildStemList();
+    rebuildScene();
+    syncSelectedUI();
+    state.waveCacheDirty = true;
+  }
+
+  async function loadFiles(files){
+    await ensureAudioContext();
+    const list = Array.from(files || []).filter((f) => {
+      const low = (f.name || "").toLowerCase();
+      return low.endsWith(".wav") || (f.type || "").includes("wav");
+    });
+
+    if (!list.length){
+      log("No WAV files found in selection.");
+      return;
+    }
+
+    await clearProject();
+
+    log(`Decoding ${list.length} file(s)...`);
+    let ok = 0;
+
+    for (let i = 0; i < list.length; i++){
+      const f = list[i];
+      try {
+        const ab = await f.arrayBuffer();
+        const buf = await state.audioCtx.decodeAudioData(ab.slice(0));
+        const stem = makeStem({
+          name: stemNameFromFile(f.name),
+          buffer: buf,
+          color: paletteColor(i),
+          idx: i,
+        });
+        state.stems.push(stem);
+        ok++;
+        log(`Decoded: ${stem.name} (${fmt(buf.duration, 2)}s)`);
+      } catch (err){
+        log(`Decode failed: ${f.name}`);
+      }
+    }
+
+    if (!ok){
+      log("No files could be decoded.");
+      return;
+    }
+
+    for (const stem of state.stems){
+      buildStemGraph(stem);
+    }
+
+    computeDuration();
+    applyAudibility();
+    rebuildStemList();
+    rebuildScene();
+    selectStem(0);
+
+    log(`Ready: ${state.stems.length} stems, max length ${fmt(state.duration, 2)}s.`);
+  }
+
+  async function tryAutoloadDemo(){
+    try {
+      await ensureAudioContext();
+      const res = await fetch("demo.wav", { cache: "no-store" });
+      if (!res.ok) return;
+      const ab = await res.arrayBuffer();
+      const buf = await state.audioCtx.decodeAudioData(ab.slice(0));
+      await clearProject();
+
+      const stem = makeStem({ name: "demo", buffer: buf, color: paletteColor(0), idx: 0 });
+      state.stems.push(stem);
+      buildStemGraph(stem);
+      computeDuration();
+      applyAudibility();
+      rebuildStemList();
+      rebuildScene();
+      selectStem(0);
+      log("Autoloaded demo.wav");
+    } catch {
+      // intentionally quiet when demo.wav is absent
+    }
+  }
+
+  // ---------- stem list / selected ui ----------
+  function rebuildStemList(){
+    ui.stemList.innerHTML = "";
+    ui.stemCount.textContent = `${state.stems.length} loaded`;
+
+    if (!state.stems.length){
+      const empty = document.createElement("div");
+      empty.className = "small";
+      empty.style.padding = "12px";
+      empty.textContent = "No stems loaded.";
+      ui.stemList.appendChild(empty);
+      applyAudibility();
+      return;
+    }
+
+    state.stems.forEach((stem, idx) => {
+      const row = document.createElement("div");
+      row.className = "stemRow" + (idx === state.selected ? " selected" : "");
+      row.dataset.idx = String(idx);
+
+      const dot = document.createElement("div");
+      dot.className = "dot";
+      dot.style.background = stem.color;
+
+      const nm = document.createElement("div");
+      nm.className = "stemName";
+      nm.textContent = stem.name;
+
+      const ms = document.createElement("div");
+      ms.className = "ms";
+      const m = document.createElement("div");
+      m.className = "msBtn m" + (stem.muted ? " on" : "");
+      m.textContent = "M";
+      const s = document.createElement("div");
+      s.className = "msBtn s" + (stem.solo ? " on" : "");
+      s.textContent = "S";
+
+      m.addEventListener("click", (e) => {
+        e.stopPropagation();
+        stem.muted = !stem.muted;
+        rebuildStemList();
+        applyAudibility();
+      });
+
+      s.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (stem.solo){
+          stem.solo = false;
+        } else {
+          state.stems.forEach((x) => { x.solo = false; });
+          stem.solo = true;
+          selectStem(idx);
+        }
+        rebuildStemList();
+        applyAudibility();
+      });
+
+      ms.appendChild(m);
+      ms.appendChild(s);
+
+      row.addEventListener("click", () => selectStem(idx));
+
+      row.appendChild(dot);
+      row.appendChild(nm);
+      row.appendChild(ms);
+      ui.stemList.appendChild(row);
+    });
+
+    applyAudibility();
+  }
+
+  function rebuildRatioUI(stem){
+    const sel = ui.ratioSelect;
+    sel.innerHTML = "";
+
+    if (!stem){
+      sel.disabled = true;
+      return;
+    }
+
+    if (stem.proc.mode === "compressor"){
+      sel.disabled = false;
+      for (const r of COMP_RATIOS){
+        const opt = document.createElement("option");
+        opt.value = String(r);
+        opt.textContent = `${r}:1`;
+        if (Math.abs(r - stem.proc.ratioComp) < 0.0001) opt.selected = true;
+        sel.appendChild(opt);
+      }
+      ui.ratioLabel.textContent = `${stem.proc.ratioComp}:1`;
+    } else if (stem.proc.mode === "expander"){
+      sel.disabled = false;
+      for (const r of EXP_RATIOS){
+        const opt = document.createElement("option");
+        opt.value = String(r);
+        opt.textContent = `1:${r}`;
+        if (Math.abs(r - stem.proc.ratioExp) < 0.0001) opt.selected = true;
+        sel.appendChild(opt);
+      }
+      ui.ratioLabel.textContent = `1:${stem.proc.ratioExp}`;
+    } else {
+      const opt = document.createElement("option");
+      opt.value = "inf";
+      opt.textContent = "∞:1 (fixed)";
+      sel.appendChild(opt);
+      sel.disabled = true;
+      ui.ratioLabel.textContent = "∞:1";
+    }
+  }
+
+  function getSelectedStem(){
+    if (state.selected < 0 || state.selected >= state.stems.length) return null;
+    return state.stems[state.selected];
+  }
+
+  function syncSelectedUI(){
+    const stem = getSelectedStem();
+    if (!stem){
+      ui.rackEmpty.classList.remove("hidden");
+      ui.rackBody.classList.add("hidden");
+      ui.hudTitle.textContent = "No stem selected";
+      ui.hudMeta.textContent = "Tap a bubble or a stem row to focus controls and visualizations.";
+      ui.waveMetaLeft.textContent = "No stem selected";
+      state.waveCacheDirty = true;
+      return;
+    }
+
+    ui.rackEmpty.classList.add("hidden");
+    ui.rackBody.classList.remove("hidden");
+
+    ui.selName.textContent = stem.name;
+    ui.modeLabel.textContent = MODE_LABEL[stem.proc.mode];
+    ui.thresholdSlider.value = String(stem.proc.thresholdDb);
+    ui.thresholdLabel.textContent = `${fmt(stem.proc.thresholdDb, 1)} dBFS`;
+
+    ui.makeupSlider.value = String(stem.proc.makeupDb);
+    ui.makeupLabel.textContent = `+${fmt(stem.proc.makeupDb, 1)} dB`;
+    const makeupEnabled = stem.proc.mode === "compressor" || stem.proc.mode === "limiter";
+    ui.makeupSlider.disabled = !makeupEnabled;
+
+    ui.panSlider.value = String(stem.pos.x);
+    ui.tiltSlider.value = String(stem.pos.y);
+    ui.panLabel.textContent = fmt(stem.pos.x, 2);
+    ui.tiltLabel.textContent = fmt(stem.pos.y, 2);
+
+    ui.bypassBtn.textContent = `Bypass: ${stem.proc.bypass ? "On" : "Off"}`;
+    ui.bypassBtn.classList.toggle("warn", stem.proc.bypass);
+
+    ui.trimSlider.value = String(stem.proc.inputTrimDb);
+    ui.trimLabel.textContent = `${stem.proc.inputTrimDb >= 0 ? "+" : ""}${fmt(stem.proc.inputTrimDb, 1)} dB`;
+
+    ui.ghostCheck.checked = state.showGhost;
+    ui.ghostCheck.disabled = stem.proc.bypass;
+    ui.ghostRow.style.opacity = stem.proc.bypass ? "0.45" : "1";
+
+    [...ui.modeSeg.querySelectorAll("button")].forEach((b) => {
+      b.classList.toggle("on", b.dataset.mode === stem.proc.mode);
+    });
+
+    rebuildRatioUI(stem);
+
+    ui.hudTitle.textContent = stem.name;
+    ui.hudMeta.textContent = `Peak ${fmt(stem.analysis.peakDb, 1)} dBFS • RMS ${fmt(stem.analysis.rmsDb, 1)} dBFS`;
+    ui.hudMode.textContent = MODE_LABEL[stem.proc.mode];
+    ui.hudThresh.textContent = `${fmt(stem.proc.thresholdDb, 1)} dB`;
+    ui.hudBypass.textContent = stem.proc.bypass ? "ON" : "OFF";
+
+    ui.waveMetaLeft.textContent = `${stem.name} • peak ${fmt(stem.analysis.peakDb, 1)} dBFS`;
+
+    state.waveCacheDirty = true;
+  }
+
+  function selectStem(idx){
+    if (!state.stems.length) return;
+    idx = clamp(idx, 0, state.stems.length - 1);
+    state.selected = idx;
+
+    ui.stemList.querySelectorAll(".stemRow").forEach((row, i) => {
+      row.classList.toggle("selected", i === idx);
+    });
+
+    highlightSelectedBubble();
+    syncSelectedUI();
+  }
+
+  // ---------- three.js scene ----------
+  const renderer = new THREE.WebGLRenderer({
+    canvas: ui.threeCanvas,
+    antialias: true,
+    alpha: true,
+    powerPreference: "high-performance",
+  });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+
+  const scene = new THREE.Scene();
+
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 100);
+  camera.position.set(0, 0, 3.2);
+  camera.lookAt(0, 0, 0);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+  const light = new THREE.DirectionalLight(0xffffff, 0.55);
+  light.position.set(2, 3, 3);
+  scene.add(light);
+
+  const mixGroup = new THREE.Group();
+  scene.add(mixGroup);
+
+  const cubeGroup = new THREE.Group();
+  mixGroup.add(cubeGroup);
+
+  const cubeGeo = new THREE.BoxGeometry(2, 2, 2);
+  const edges = new THREE.EdgesGeometry(cubeGeo);
+  const edgeMat = new THREE.LineBasicMaterial({ color: 0x7aa7ff, transparent: true, opacity: 0.45 });
+  cubeGroup.add(new THREE.LineSegments(edges, edgeMat));
+
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(2.2, 2.2),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.04, side: THREE.DoubleSide })
+  );
+  floor.rotation.x = Math.PI / 2;
+  floor.position.y = -1;
+  cubeGroup.add(floor);
+
+  const bubbleGroup = new THREE.Group();
+  mixGroup.add(bubbleGroup);
+  const bubbleMeshes = [];
+
+  const ghostMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(0.09, 24, 24),
+    new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.24, roughness: 0.4, metalness: 0 })
+  );
+  ghostMesh.visible = false;
+  mixGroup.add(ghostMesh);
+
+  const thresholdWall = new THREE.Mesh(
+    new THREE.PlaneGeometry(2.02, 2.02),
+    new THREE.MeshBasicMaterial({ color: 0xffb86b, transparent: true, opacity: 0.16, side: THREE.DoubleSide })
+  );
+  thresholdWall.visible = false;
+  mixGroup.add(thresholdWall);
+
+  const wallBorder = new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.PlaneGeometry(2.02, 2.02)),
+    new THREE.LineBasicMaterial({ color: 0xffb86b, transparent: true, opacity: 0.58 })
+  );
+  wallBorder.visible = false;
+  mixGroup.add(wallBorder);
+
+  const grArrow = new THREE.ArrowHelper(
+    new THREE.Vector3(0, 0, -1),
+    new THREE.Vector3(0, 0, 0),
+    0,
+    0xff4d4d,
+    0.08,
+    0.04
+  );
+  grArrow.visible = false;
+  mixGroup.add(grArrow);
+
+  const quietGray = new THREE.Color(0x7e7e7e);
+  const bubbleTmpColor = new THREE.Color();
+
+  function makeTextSprite(text, opts = {}){
+    const c = document.createElement("canvas");
+    c.width = 512;
+    c.height = 128;
+    const ctx = c.getContext("2d");
+    const tex = new THREE.CanvasTexture(c);
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
+    const spr = new THREE.Sprite(mat);
+    spr.scale.set(opts.w ?? 0.82, opts.h ?? 0.2, 1);
+    spr.userData.canvas = c;
+    spr.userData.ctx = ctx;
+    spr.userData.tex = tex;
+    spr.userData.opts = opts;
+    setTextSpriteText(spr, text);
+    return spr;
+  }
+
+  function setTextSpriteText(sprite, text){
+    const c = sprite.userData.canvas;
+    const ctx = sprite.userData.ctx;
+    const tex = sprite.userData.tex;
+    const opts = sprite.userData.opts || {};
+    const fg = opts.fg || "rgba(231,238,249,.98)";
+    const bg = opts.bg || "rgba(10,14,22,.62)";
+    const border = opts.border || "rgba(255,255,255,.18)";
+    const px = opts.px || 44;
+
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.fillStyle = bg;
+    ctx.strokeStyle = border;
+    ctx.lineWidth = 4;
+
+    const rx = 12;
+    const ry = 18;
+    const rw = c.width - 24;
+    const rh = c.height - 36;
+    const rr = 18;
+    ctx.beginPath();
+    ctx.moveTo(rx + rr, ry);
+    ctx.arcTo(rx + rw, ry, rx + rw, ry + rh, rr);
+    ctx.arcTo(rx + rw, ry + rh, rx, ry + rh, rr);
+    ctx.arcTo(rx, ry + rh, rx, ry, rr);
+    ctx.arcTo(rx, ry, rx + rw, ry, rr);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = fg;
+    ctx.font = `700 ${px}px system-ui`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, c.width / 2, c.height / 2 + 2);
+    tex.needsUpdate = true;
+  }
+
+  const loudLabel = makeTextSprite("0 dB (LOUD)", { w: 0.95, h: 0.22, px: 38 });
+  loudLabel.position.set(0.0, 1.14, 1.04);
+  mixGroup.add(loudLabel);
+
+  const quietLabel = makeTextSprite("-∞ (QUIET)", { w: 0.95, h: 0.22, px: 38 });
+  quietLabel.position.set(0.0, -1.14, -1.04);
+  mixGroup.add(quietLabel);
+
+  const wallLabel = makeTextSprite("THRESH -24.0 dBFS", {
+    w: 1.08, h: 0.23, px: 34, fg: "rgba(255,218,170,.98)", border: "rgba(255,184,107,.42)"
+  });
+  wallLabel.visible = false;
+  mixGroup.add(wallLabel);
+
+  function posToScene(x, y, z){
+    return new THREE.Vector3(clamp(x, -1, 1), clamp(y, -1, 1), clamp(z, 0, 1) * 2 - 1);
+  }
+
+  function makeBubble(color){
+    const c = new THREE.Color(color);
+    const mat = new THREE.MeshStandardMaterial({
+      color: c,
+      transparent: true,
+      opacity: 0.92,
+      roughness: 0.25,
+      metalness: 0.07,
+      emissive: c.clone(),
+      emissiveIntensity: 0.25,
+    });
+    return new THREE.Mesh(new THREE.SphereGeometry(0.09, 24, 24), mat);
+  }
+
+  function rebuildScene(){
+    for (const mesh of bubbleMeshes){
+      if (!mesh) continue;
+      bubbleGroup.remove(mesh);
+      mesh.geometry.dispose();
+      mesh.material.dispose();
+    }
+    bubbleMeshes.length = 0;
+
+    state.stems.forEach((stem, idx) => {
+      const z = dbToStemZ(stem, stem.proc.bypass ? stem.meter.preDb : stem.meter.postDb);
+      const mesh = makeBubble(stem.color);
+      mesh.userData.baseColor = stem.baseColor.clone();
+      mesh.position.copy(posToScene(stem.pos.x, stem.pos.y, z));
+      mesh.userData.idx = idx;
+      bubbleGroup.add(mesh);
+      bubbleMeshes[idx] = mesh;
+    });
+
+    highlightSelectedBubble();
+  }
+
+  function highlightSelectedBubble(){
+    bubbleMeshes.forEach((mesh, idx) => {
+      if (!mesh) return;
+      const sel = idx === state.selected;
+      mesh.scale.setScalar(sel ? 1.3 : 1.0);
+      mesh.material.emissiveIntensity = sel ? 0.42 : 0.22;
+    });
+  }
+
+  function resizeThree(){
+    const rect = ui.threeCanvas.getBoundingClientRect();
+    const w = Math.max(2, Math.floor(rect.width));
+    const h = Math.max(2, Math.floor(rect.height));
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+
+  const raycaster = new THREE.Raycaster();
+  const pointer = new THREE.Vector2();
+  let dragging = false;
+  let dragIdx = -1;
+  const dragPlane = new THREE.Plane();
+  const dragOffset = new THREE.Vector3();
+  const dragWorldNormal = new THREE.Vector3();
+  const dragWorldPos = new THREE.Vector3();
+  const dragHitWorld = new THREE.Vector3();
+  const dragLocalPos = new THREE.Vector3();
+  const tmpQuat = new THREE.Quaternion();
+
+  function setPointerFromEvent(e){
+    const rect = ui.threeCanvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    pointer.x = x * 2 - 1;
+    pointer.y = -(y * 2 - 1);
+  }
+
+  function pickBubble(e){
+    setPointerFromEvent(e);
+    raycaster.setFromCamera(pointer, camera);
+    const hits = raycaster.intersectObjects(bubbleGroup.children, false);
+    if (!hits.length) return -1;
+    return hits[0].object.userData.idx ?? -1;
+  }
+
+  function onCubePointerDown(e){
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    const idx = pickBubble(e);
+    if (idx < 0) return;
+
+    selectStem(idx);
+
+    dragging = true;
+    dragIdx = idx;
+
+    const mesh = bubbleMeshes[idx];
+    mixGroup.getWorldQuaternion(tmpQuat);
+    dragWorldNormal.set(0, 0, 1).applyQuaternion(tmpQuat).normalize();
+    mesh.getWorldPosition(dragWorldPos);
+    dragPlane.setFromNormalAndCoplanarPoint(dragWorldNormal, dragWorldPos);
+
+    setPointerFromEvent(e);
+    raycaster.setFromCamera(pointer, camera);
+    raycaster.ray.intersectPlane(dragPlane, dragHitWorld);
+    dragOffset.copy(dragWorldPos).sub(dragHitWorld);
+
+    ui.threeCanvas.setPointerCapture?.(e.pointerId);
+  }
+
+  function onCubePointerMove(e){
+    if (!dragging || dragIdx < 0) return;
+    const mesh = bubbleMeshes[dragIdx];
+    const stem = state.stems[dragIdx];
+    if (!mesh || !stem) return;
+
+    setPointerFromEvent(e);
+    raycaster.setFromCamera(pointer, camera);
+    if (!raycaster.ray.intersectPlane(dragPlane, dragHitWorld)) return;
+
+    dragHitWorld.add(dragOffset);
+    dragLocalPos.copy(dragHitWorld);
+    bubbleGroup.worldToLocal(dragLocalPos);
+    stem.pos.x = clamp(dragLocalPos.x, -1, 1);
+    stem.pos.y = clamp(dragLocalPos.y, -1, 1);
+
+    applyStemSpatial(stem);
+    syncSelectedUI();
+    state.waveCacheDirty = true;
+  }
+
+  function onCubePointerUp(){
+    dragging = false;
+    dragIdx = -1;
+  }
+
+  ui.threeCanvas.addEventListener("pointerdown", onCubePointerDown);
+  ui.threeCanvas.addEventListener("pointermove", onCubePointerMove);
+  ui.threeCanvas.addEventListener("pointerup", onCubePointerUp);
+  ui.threeCanvas.addEventListener("pointercancel", onCubePointerUp);
+
+  // ---------- waveform ----------
+  const waveCtx = ui.waveCanvas.getContext("2d");
+  const waveCacheCtx = state.waveCache.getContext("2d");
+
+  function fitCanvasToDisplay(canvas){
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = Math.max(2, Math.floor(rect.width * dpr));
+    const h = Math.max(2, Math.floor(rect.height * dpr));
+    if (canvas.width !== w || canvas.height !== h){
+      canvas.width = w;
+      canvas.height = h;
+      return true;
+    }
+    return false;
+  }
+
+  function isBinAffected(mode, binDb, thresholdDb){
+    if (mode === "compressor" || mode === "limiter") return binDb > thresholdDb;
+    if (mode === "gate" || mode === "expander") return binDb < thresholdDb;
+    return false;
+  }
+
+  function redrawWaveCache(){
+    fitCanvasToDisplay(ui.waveCanvas);
+    if (state.waveCache.width !== ui.waveCanvas.width || state.waveCache.height !== ui.waveCanvas.height){
+      state.waveCache.width = ui.waveCanvas.width;
+      state.waveCache.height = ui.waveCanvas.height;
+    }
+
+    const w = state.waveCache.width;
+    const h = state.waveCache.height;
+    const mid = h * 0.5;
+
+    waveCacheCtx.clearRect(0, 0, w, h);
+    waveCacheCtx.fillStyle = "rgba(4,9,14,.75)";
+    waveCacheCtx.fillRect(0, 0, w, h);
+
+    const stem = getSelectedStem();
+    if (!stem){
+      waveCacheCtx.fillStyle = "rgba(231,238,249,.45)";
+      waveCacheCtx.font = `${Math.max(12, h * 0.08)}px system-ui`;
+      waveCacheCtx.textAlign = "center";
+      waveCacheCtx.textBaseline = "middle";
+      waveCacheCtx.fillText("Select a stem", w * 0.5, h * 0.5);
+      state.waveCacheDirty = false;
+      return;
+    }
+
+    const peaks = stem.wave.peaks;
+    const peakDbs = stem.wave.peakDbs;
+    const bins = peaks.length;
+
+    waveCacheCtx.strokeStyle = "rgba(255,255,255,.08)";
+    waveCacheCtx.lineWidth = 1;
+    waveCacheCtx.beginPath();
+    waveCacheCtx.moveTo(0, mid);
+    waveCacheCtx.lineTo(w, mid);
+    waveCacheCtx.stroke();
+
+    const showAffected = !stem.proc.bypass;
+    if (showAffected){
+      waveCacheCtx.fillStyle = (stem.proc.mode === "compressor" || stem.proc.mode === "limiter")
+        ? "rgba(255,128,128,.18)"
+        : "rgba(102,217,255,.16)";
+      for (let i = 0; i < bins; i++){
+        if (!isBinAffected(stem.proc.mode, peakDbs[i], stem.proc.thresholdDb)) continue;
+        const x = Math.floor(i * w / bins);
+        const x2 = Math.ceil((i + 1) * w / bins);
+        waveCacheCtx.fillRect(x, 0, Math.max(1, x2 - x), h);
+      }
+    }
+
+    waveCacheCtx.strokeStyle = "rgba(124,255,178,.9)";
+    waveCacheCtx.lineWidth = 1;
+    for (let i = 0; i < bins; i++){
+      const x = Math.floor(i * w / bins);
+      const amp = clamp(peaks[i] * stem.analysis.waveScale, 0, 1);
+      const hh = amp * (h * 0.47);
+      waveCacheCtx.beginPath();
+      waveCacheCtx.moveTo(x + 0.5, mid - hh);
+      waveCacheCtx.lineTo(x + 0.5, mid + hh);
+      waveCacheCtx.stroke();
+    }
+
+    const thrAmp = clamp(dbToGain(stem.proc.thresholdDb) * stem.analysis.waveScale, 0, 1);
+    const thrY1 = mid - thrAmp * (h * 0.47);
+    const thrY2 = mid + thrAmp * (h * 0.47);
+
+    waveCacheCtx.strokeStyle = "rgba(255,184,107,.95)";
+    waveCacheCtx.setLineDash([8, 6]);
+    waveCacheCtx.lineWidth = 1.2;
+    waveCacheCtx.beginPath();
+    waveCacheCtx.moveTo(0, thrY1);
+    waveCacheCtx.lineTo(w, thrY1);
+    waveCacheCtx.moveTo(0, thrY2);
+    waveCacheCtx.lineTo(w, thrY2);
+    waveCacheCtx.stroke();
+    waveCacheCtx.setLineDash([]);
+
+    state.waveCacheDirty = false;
+  }
+
+  function drawWaveframe(){
+    if (state.waveCacheDirty || fitCanvasToDisplay(ui.waveCanvas)){
+      redrawWaveCache();
+    }
+
+    waveCtx.clearRect(0, 0, ui.waveCanvas.width, ui.waveCanvas.height);
+    waveCtx.drawImage(state.waveCache, 0, 0, ui.waveCanvas.width, ui.waveCanvas.height);
+
+    const x = state.duration > 0 ? (state.position / state.duration) * ui.waveCanvas.width : 0;
+    waveCtx.strokeStyle = "rgba(255,255,255,.95)";
+    waveCtx.lineWidth = 2;
+    waveCtx.beginPath();
+    waveCtx.moveTo(x + 0.5, 0);
+    waveCtx.lineTo(x + 0.5, ui.waveCanvas.height);
+    waveCtx.stroke();
+  }
+
+  function scrubFromPointerEvent(e){
+    const rect = ui.waveCanvas.getBoundingClientRect();
+    const x = clamp(e.clientX - rect.left, 0, rect.width);
+    const t = rect.width > 0 ? (x / rect.width) * (state.duration || 0) : 0;
+    state.position = t;
+  }
+
+  ui.waveCanvas.addEventListener("pointerdown", (e) => {
+    if (!state.duration) return;
+    ui.waveCanvas.setPointerCapture?.(e.pointerId);
+    state.waveDrag = true;
+    state.waveResumeAfterDrag = state.playing;
+    if (state.playing) pausePlayback();
+    scrubFromPointerEvent(e);
+  });
+
+  ui.waveCanvas.addEventListener("pointermove", (e) => {
+    if (!state.waveDrag) return;
+    scrubFromPointerEvent(e);
+  });
+
+  function endWaveDrag(){
+    if (!state.waveDrag) return;
+    state.waveDrag = false;
+    if (state.waveResumeAfterDrag){
+      state.waveResumeAfterDrag = false;
+      startPlayback();
+    }
+  }
+
+  ui.waveCanvas.addEventListener("pointerup", endWaveDrag);
+  ui.waveCanvas.addEventListener("pointercancel", endWaveDrag);
+
+  // ---------- events ----------
+  ui.fileInput.addEventListener("change", async (e) => {
+    const files = e.target.files;
+    if (!files || !files.length) return;
+    await loadFiles(files);
+    ui.fileInput.value = "";
+  });
+
+  ui.enableAudioBtn.addEventListener("click", async () => {
+    await ensureAudioContext();
+    try {
+      await state.audioCtx.resume();
+      updateAudioPill();
+      log("Audio enabled.");
+    } catch {
+      log("Could not resume audio context.");
+    }
+  });
+
+  ui.playBtn.addEventListener("click", async () => {
+    await ensureAudioContext();
+    if (state.playing) pausePlayback();
+    else startPlayback();
+  });
+
+  ui.restartBtn.addEventListener("click", restartPlayback);
+
+  ui.loopBtn.addEventListener("click", () => {
+    state.loop = !state.loop;
+    ui.loopBtn.textContent = `Loop: ${state.loop ? "On" : "Off"}`;
+    ui.loopBtn.classList.toggle("primary", state.loop);
+  });
+
+  function setViewMode(nextIndex){
+    const idx = ((nextIndex % VIEW_MODES.length) + VIEW_MODES.length) % VIEW_MODES.length;
+    state.viewIndex = idx;
+    const mode = VIEW_MODES[idx];
+    state.viewTargetRot.x = mode.rot.x;
+    state.viewTargetRot.y = mode.rot.y;
+    state.viewTargetRot.z = mode.rot.z;
+    ui.viewBtn.textContent = `View: ${mode.label}`;
+  }
+
+  ui.viewBtn.addEventListener("click", () => {
+    setViewMode(state.viewIndex + 1);
+  });
+
+  ui.clearSoloBtn.addEventListener("click", () => {
+    state.stems.forEach((s) => { s.solo = false; });
+    rebuildStemList();
+    applyAudibility();
+  });
+
+  ui.masterVol.addEventListener("input", () => {
+    if (state.masterGain && state.audioCtx){
+      state.masterGain.gain.setTargetAtTime(dbToGain(Number(ui.masterVol.value || 0)), state.audioCtx.currentTime, 0.02);
+    }
+  });
+
+  ui.modeSeg.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-mode]");
+    if (!btn) return;
+    const stem = getSelectedStem();
+    if (!stem) return;
+
+    stem.proc.mode = btn.dataset.mode;
+    applyStemProcessorParams(stem);
+    syncSelectedUI();
+    state.waveCacheDirty = true;
+  });
+
+  ui.thresholdSlider.addEventListener("input", () => {
+    const stem = getSelectedStem();
+    if (!stem) return;
+    stem.proc.thresholdDb = Number(ui.thresholdSlider.value);
+    applyStemProcessorParams(stem);
+    syncSelectedUI();
+    state.waveCacheDirty = true;
+  });
+
+  ui.ratioSelect.addEventListener("change", () => {
+    const stem = getSelectedStem();
+    if (!stem) return;
+    const v = Number(ui.ratioSelect.value);
+
+    if (stem.proc.mode === "compressor") stem.proc.ratioComp = v;
+    if (stem.proc.mode === "expander") stem.proc.ratioExp = v;
+
+    applyStemProcessorParams(stem);
+    syncSelectedUI();
+  });
+
+  ui.makeupSlider.addEventListener("input", () => {
+    const stem = getSelectedStem();
+    if (!stem) return;
+    stem.proc.makeupDb = Number(ui.makeupSlider.value);
+    applyStemProcessorParams(stem);
+    syncSelectedUI();
+  });
+
+  ui.panSlider.addEventListener("input", () => {
+    const stem = getSelectedStem();
+    if (!stem) return;
+    stem.pos.x = Number(ui.panSlider.value);
+    applyStemSpatial(stem);
+    syncSelectedUI();
+  });
+
+  ui.tiltSlider.addEventListener("input", () => {
+    const stem = getSelectedStem();
+    if (!stem) return;
+    stem.pos.y = Number(ui.tiltSlider.value);
+    applyStemSpatial(stem);
+    syncSelectedUI();
+  });
+
+  ui.bypassBtn.addEventListener("click", () => {
+    const stem = getSelectedStem();
+    if (!stem) return;
+    stem.proc.bypass = !stem.proc.bypass;
+    applyStemProcessorParams(stem);
+    syncSelectedUI();
+    state.waveCacheDirty = true;
+  });
+
+  ui.ghostCheck.addEventListener("change", () => {
+    state.showGhost = !!ui.ghostCheck.checked;
+  });
+
+  ui.trimSlider.addEventListener("input", () => {
+    const stem = getSelectedStem();
+    if (!stem) return;
+    stem.proc.inputTrimDb = Number(ui.trimSlider.value);
+    applyStemTrim(stem);
+    syncSelectedUI();
+  });
+
+  window.addEventListener("resize", () => {
+    resizeThree();
+    state.waveCacheDirty = true;
+  });
+
+  document.addEventListener("visibilitychange", updateAudioPill);
+
+  // ---------- animation ----------
+  const masterTmp = new Float32Array(512);
+
+  function setRightToLeftFill(el, amount01){
+    const x = clamp(amount01, 0, 1);
+    el.style.transform = `scaleX(${x.toFixed(4)})`;
+  }
+
+  function updateMasterMeter(){
+    if (!state.masterAnalyser) return;
+    state.masterAnalyser.getFloatTimeDomainData(masterTmp);
+    let sum = 0;
+    for (let i = 0; i < masterTmp.length; i++) sum += masterTmp[i] * masterTmp[i];
+    const rms = Math.sqrt(sum / masterTmp.length);
+    const db = gainToDb(rms || 1e-8);
+    const pct = clamp((db + 60) / 60, 0, 1) * 100;
+    ui.masterFill.style.width = `${pct.toFixed(1)}%`;
+
+    state.masterLimiterGrSmooth = lerp(state.masterLimiterGrSmooth, state.masterLimiterGrDb, 0.22);
+    const limAmt = clamp(state.masterLimiterGrSmooth / 24, 0, 1);
+    setRightToLeftFill(ui.masterGrFill, limAmt);
+    ui.masterGrText.textContent = `${fmt(state.masterLimiterGrSmooth, 1)} dB`;
+  }
+
+  function updateCubeAndHud(){
+    const stemSel = getSelectedStem();
+
+    for (let i = 0; i < state.stems.length; i++){
+      const stem = state.stems[i];
+      const mesh = bubbleMeshes[i];
+      if (!mesh) continue;
+
+      stem.meter.preSmooth = lerp(stem.meter.preSmooth, stem.meter.preDb, 0.22);
+      stem.meter.postSmooth = lerp(stem.meter.postSmooth, stem.meter.postDb, 0.22);
+
+      const preZ = dbToStemZ(stem, stem.meter.preSmooth);
+      let postZ = dbToStemZ(stem, stem.meter.postSmooth);
+
+      if (i === state.selected){
+        const wallZ = dbToStemZ(stem, stem.proc.thresholdDb);
+        if (stem.proc.mode === "limiter") postZ = Math.min(postZ, wallZ);
+      }
+
+      const drawZ = stem.proc.bypass ? preZ : postZ;
+      const p = posToScene(stem.pos.x, stem.pos.y, drawZ);
+      mesh.position.copy(p);
+
+      const level = clamp(drawZ, 0, 1);
+      const baseScale = i === state.selected ? 1.3 : 1.0;
+      mesh.scale.setScalar(baseScale * (1 + level * 0.35));
+
+      const effectAmount = stem.proc.bypass ? 0 : clamp(stem.meter.grDb / 12, 0, 1);
+      bubbleTmpColor.copy(stem.baseColor).lerp(quietGray, effectAmount);
+      mesh.material.color.copy(bubbleTmpColor);
+      mesh.material.emissive.copy(bubbleTmpColor);
+      mesh.material.emissiveIntensity = i === state.selected ? 0.42 : 0.22;
+    }
+
+    if (!stemSel){
+      thresholdWall.visible = false;
+      wallBorder.visible = false;
+      ghostMesh.visible = false;
+      grArrow.visible = false;
+      wallLabel.visible = false;
+      ui.hudPre.textContent = "—";
+      ui.hudPost.textContent = "—";
+      ui.hudGr.textContent = "—";
+      ui.grText.textContent = "0.0 dB";
+      setRightToLeftFill(ui.grFill, 0);
+      return;
+    }
+
+    const preDb = stemSel.meter.preSmooth;
+    const postDbReal = stemSel.meter.postSmooth;
+
+    const wallZ = dbToStemZ(stemSel, stemSel.proc.thresholdDb);
+    let postZ = dbToStemZ(stemSel, postDbReal);
+
+    if (stemSel.proc.mode === "limiter") postZ = Math.min(postZ, wallZ);
+
+    thresholdWall.visible = true;
+    wallBorder.visible = true;
+    thresholdWall.position.z = wallZ * 2 - 1;
+    wallBorder.position.z = wallZ * 2 - 1;
+    wallLabel.visible = true;
+    wallLabel.position.set(0.82, 0.92, wallZ * 2 - 1);
+    const wallTxt = `THRESH ${fmt(stemSel.proc.thresholdDb, 1)} dBFS`;
+    if (wallLabel.userData.lastText !== wallTxt){
+      setTextSpriteText(wallLabel, wallTxt);
+      wallLabel.userData.lastText = wallTxt;
+    }
+
+    const prePos = posToScene(stemSel.pos.x, stemSel.pos.y, dbToStemZ(stemSel, preDb));
+    const postPos = posToScene(stemSel.pos.x, stemSel.pos.y, stemSel.proc.bypass ? dbToStemZ(stemSel, preDb) : postZ);
+
+    const showGhost = state.showGhost && !stemSel.proc.bypass;
+    ghostMesh.visible = showGhost;
+    if (showGhost){
+      ghostMesh.position.copy(prePos);
+      const ghostLevel = clamp(dbToStemZ(stemSel, preDb), 0, 1);
+      ghostMesh.scale.setScalar(1.3 * (1 + ghostLevel * 0.35));
+    }
+
+    const grDb = Math.max(0, preDb - postDbReal);
+    ui.hudPre.textContent = `${fmt(preDb, 1)} dB`;
+    ui.hudPost.textContent = `${fmt(postDbReal, 1)} dB`;
+    ui.hudGr.textContent = `${fmt(grDb, 1)} dB`;
+
+    ui.grText.textContent = `${fmt(grDb, 1)} dB`;
+    setRightToLeftFill(ui.grFill, clamp(grDb / 24, 0, 1));
+
+    const dz = Math.max(0, prePos.z - postPos.z);
+    if (!stemSel.proc.bypass && dz > 0.01){
+      grArrow.visible = true;
+      grArrow.position.set(prePos.x, prePos.y + 0.12, prePos.z);
+      grArrow.setDirection(new THREE.Vector3(0, 0, -1));
+      grArrow.setLength(dz, 0.09, 0.05);
+    } else {
+      grArrow.visible = false;
+    }
+  }
+
+  function tick(){
+    resizeThree();
+
+    if (state.audioCtx && state.playing){
+      const elapsed = Math.max(0, state.audioCtx.currentTime - state.startTime);
+      state.position = clamp(state.offsetAtStart + elapsed, 0, state.duration || 0);
+    }
+
+    ui.timeTxt.textContent = mmss(state.position);
+
+    mixGroup.rotation.x = lerpAngle(mixGroup.rotation.x, state.viewTargetRot.x, 0.11);
+    mixGroup.rotation.y = lerpAngle(mixGroup.rotation.y, state.viewTargetRot.y, 0.11);
+    mixGroup.rotation.z = lerpAngle(mixGroup.rotation.z, state.viewTargetRot.z, 0.11);
+
+    camera.lookAt(0, 0, 0);
+
+    updateCubeAndHud();
+    updateMasterMeter();
+    drawWaveframe();
+
+    renderer.render(scene, camera);
+    state.rafId = requestAnimationFrame(tick);
+  }
+
+  // ---------- init ----------
+  function init(){
+    ui.loopBtn.textContent = "Loop: On";
+    ui.loopBtn.classList.add("primary");
+
+    ui.hudMode.textContent = "—";
+    ui.hudThresh.textContent = "—";
+    ui.hudBypass.textContent = "—";
+    setRightToLeftFill(ui.grFill, 0);
+    setRightToLeftFill(ui.masterGrFill, 0);
+    setViewMode(0);
+
+    rebuildStemList();
+    rebuildScene();
+    syncSelectedUI();
+
+    ensureAudioContext().then(() => {
+      updateAudioPill();
+      tryAutoloadDemo();
+    });
+
+    tick();
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
