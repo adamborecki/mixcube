@@ -344,6 +344,48 @@
       background: rgba(0,0,0,.2);
       border-radius:999px;
     }
+    .scrubWrap{
+      flex: 1 1 100%;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .scrubTrack{
+      position:relative;
+      width:100%;
+      height:10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.08);
+      cursor:pointer;
+      overflow:visible;
+      touch-action:none;
+    }
+    .scrubTrack.disabled{
+      opacity:.5;
+      cursor:default;
+    }
+    .scrubFill{
+      position:absolute;
+      left:0; top:0; bottom:0;
+      width:0%;
+      border-radius:999px;
+      background: linear-gradient(90deg, rgba(102,217,255,.95), rgba(124,255,178,.95));
+      pointer-events:none;
+    }
+    .scrubHandle{
+      position:absolute;
+      top:50%;
+      left:0%;
+      width:14px;
+      height:14px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.75);
+      background:#f5fbff;
+      box-shadow: 0 2px 12px rgba(0,0,0,.45);
+      transform: translate(-50%, -50%);
+      pointer-events:none;
+    }
 
     .overlay{
       position:fixed; inset:0;
@@ -552,7 +594,13 @@
       <button id="playBtn" class="btn primary">Play</button>
       <button id="restartBtn" class="btn">Restart</button>
       <button id="loopBtn" class="btn primary">Loop: On</button>
-      <span class="time" id="timeTxt">00:00</span>
+      <span class="time" id="timeTxt">00:00 / 00:00</span>
+    </div>
+    <div class="scrubWrap">
+      <div class="scrubTrack" id="scrubTrack" role="slider" tabindex="0" aria-label="Timeline scrubber" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="scrubFill" id="scrubFill"></div>
+        <div class="scrubHandle" id="scrubHandle"></div>
+      </div>
     </div>
     <div class="row" style="flex-wrap:wrap;">
       <span class="pill"><span class="dot" style="background:#66d9ff"></span><span>Master: -6 dB</span></span>
@@ -688,6 +736,9 @@
   const restartBtn = document.getElementById('restartBtn');
   const loopBtn = document.getElementById('loopBtn');
   const timeTxt = document.getElementById('timeTxt');
+  const scrubTrack = document.getElementById('scrubTrack');
+  const scrubFill = document.getElementById('scrubFill');
+  const scrubHandle = document.getElementById('scrubHandle');
 
   const resetBtn = document.getElementById('resetBtn');
   const exportBtn = document.getElementById('exportBtn');
@@ -767,6 +818,8 @@
     startTime: 0,
     offsetAtStart: 0,
     duration: 0,
+    scrubDragging: false,
+    scrubResumeAfterDrag: false,
     demoMode: false,
   };
 
@@ -894,6 +947,7 @@
     let d = 0;
     for (const s of state.stems) if (s.buffer) d = Math.max(d, s.buffer.duration);
     state.duration = d || 0;
+    state.position = clamp(state.position, 0, state.duration || 0);
   }
 
   function anySolo(){
@@ -1051,7 +1105,7 @@
     if (!audioCtx || !state.playing) return;
     const now = audioCtx.currentTime;
     const elapsed = Math.max(0, now - state.startTime);
-    state.position = clamp(state.offsetAtStart + elapsed, 0, state.duration || Infinity);
+    state.position = clamp(state.offsetAtStart + elapsed, 0, state.duration || 0);
     disposeSources();
     state.playing = false;
     playBtn.textContent = "Play";
@@ -1059,12 +1113,19 @@
 
   function restartPlayback(){
     state.position = 0;
-    timeTxt.textContent = "00:00";
     if (state.playing){
       pausePlayback();
       startPlayback();
     }else{
       renderInspector();
+    }
+  }
+
+  function seekTo(seconds){
+    state.position = clamp(seconds, 0, state.duration || 0);
+    if (state.playing){
+      pausePlayback();
+      startPlayback();
     }
   }
 
@@ -1078,10 +1139,39 @@
     if (audioCtx && state.playing){
       const now = audioCtx.currentTime;
       const elapsed = Math.max(0, now - state.startTime);
-      state.position = state.offsetAtStart + elapsed;
+      state.position = clamp(state.offsetAtStart + elapsed, 0, state.duration || 0);
     }
-    timeTxt.textContent = mmss(state.position);
+    const dur = state.duration || 0;
+    const pos = clamp(state.position, 0, dur || 0);
+    const pct = dur > 0 ? (pos / dur) : 0;
+    const pctText = `${(pct * 100).toFixed(3)}%`;
+
+    timeTxt.textContent = `${mmss(pos)} / ${mmss(dur)}`;
+    scrubFill.style.width = pctText;
+    scrubHandle.style.left = pctText;
+    scrubTrack.setAttribute('aria-valuenow', String(Math.round(pct * 100)));
+    scrubTrack.setAttribute('aria-valuetext', `${mmss(pos)} of ${mmss(dur)}`);
+    scrubTrack.setAttribute('aria-disabled', dur <= 0 ? 'true' : 'false');
+    scrubTrack.classList.toggle('disabled', dur <= 0);
+
     requestAnimationFrame(transportTick);
+  }
+
+  function scrubFromPointerEvent(e){
+    if (!state.duration) return;
+    const rect = scrubTrack.getBoundingClientRect();
+    const x = clamp(e.clientX - rect.left, 0, rect.width);
+    const t = rect.width > 0 ? (x / rect.width) * state.duration : 0;
+    seekTo(t);
+  }
+
+  function endScrubDrag(){
+    if (!state.scrubDragging) return;
+    state.scrubDragging = false;
+    if (state.scrubResumeAfterDrag){
+      state.scrubResumeAfterDrag = false;
+      startPlayback();
+    }
   }
 
   // ---------- demo ----------
@@ -2087,6 +2177,44 @@
 
   restartBtn.addEventListener('click', restartPlayback);
   loopBtn.addEventListener('click', () => setLoop(!state.loop));
+
+  scrubTrack.addEventListener('pointerdown', (e) => {
+    if (!state.duration) return;
+    e.preventDefault();
+    scrubTrack.setPointerCapture?.(e.pointerId);
+    state.scrubDragging = true;
+    state.scrubResumeAfterDrag = state.playing;
+    if (state.playing) pausePlayback();
+    scrubFromPointerEvent(e);
+  });
+
+  scrubTrack.addEventListener('pointermove', (e) => {
+    if (!state.scrubDragging) return;
+    scrubFromPointerEvent(e);
+  });
+
+  scrubTrack.addEventListener('pointerup', endScrubDrag);
+  scrubTrack.addEventListener('pointercancel', endScrubDrag);
+  document.addEventListener('pointerup', endScrubDrag);
+  document.addEventListener('pointercancel', endScrubDrag);
+
+  scrubTrack.addEventListener('keydown', (e) => {
+    if (!state.duration) return;
+    const fine = Math.max(1, state.duration * 0.01);
+    const coarse = Math.max(5, state.duration * 0.05);
+    let next = null;
+
+    if (e.key === 'ArrowLeft') next = state.position - fine;
+    else if (e.key === 'ArrowRight') next = state.position + fine;
+    else if (e.key === 'PageDown') next = state.position - coarse;
+    else if (e.key === 'PageUp') next = state.position + coarse;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = state.duration;
+
+    if (next === null) return;
+    e.preventDefault();
+    seekTo(next);
+  });
 
   resetBtn.addEventListener('click', () => {
     for (let i=0;i<state.stems.length;i++){

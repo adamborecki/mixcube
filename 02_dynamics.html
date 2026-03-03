@@ -473,6 +473,9 @@
         <span>Load WAV stems…</span>
       </label>
       <button id="viewBtn" class="btn">View: FRONT</button>
+      <button id="exportBtn" class="btn">Export preset</button>
+      <button id="importBtn" class="btn">Import preset</button>
+      <input id="importFile" type="file" accept="application/json,.json" style="display:none" />
     </div>
   </header>
 
@@ -700,6 +703,9 @@
   const ui = {
     fileInput: document.getElementById("fileInput"),
     viewBtn: document.getElementById("viewBtn"),
+    exportBtn: document.getElementById("exportBtn"),
+    importBtn: document.getElementById("importBtn"),
+    importFile: document.getElementById("importFile"),
     stemCount: document.getElementById("stemCount"),
     stemList: document.getElementById("stemList"),
     soloPill: document.getElementById("soloPill"),
@@ -1604,6 +1610,134 @@
     }
   }
 
+  // ---------- presets ----------
+  function exportPreset(){
+    const payload = {
+      app: "Dynamics Cube (Stems)",
+      version: 1.0,
+      createdAt: new Date().toISOString(),
+      loop: !!state.loop,
+      viewIndex: state.viewIndex,
+      showGhost: !!state.showGhost,
+      masterVolDb: Number(ui.masterVol.value || 0),
+      selected: state.selected,
+      stems: state.stems.map((stem, idx) => ({
+        index: idx,
+        name: stem.name,
+        color: stem.color,
+        muted: !!stem.muted,
+        solo: !!stem.solo,
+        pos: {
+          x: stem.pos.x,
+          y: stem.pos.y,
+        },
+        proc: {
+          mode: stem.proc.mode,
+          thresholdDb: stem.proc.thresholdDb,
+          ratioComp: stem.proc.ratioComp,
+          ratioExp: stem.proc.ratioExp,
+          makeupDb: stem.proc.makeupDb,
+          bypass: !!stem.proc.bypass,
+          inputTrimDb: stem.proc.inputTrimDb,
+        },
+      })),
+    };
+
+    const json = JSON.stringify(payload, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "dynamics_cube_preset.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    log("Exported preset JSON.");
+  }
+
+  async function importPresetFile(file){
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      if (!data || !Array.isArray(data.stems)){
+        log("Invalid preset JSON.");
+        return;
+      }
+
+      if (typeof data.loop === "boolean"){
+        state.loop = data.loop;
+        ui.loopBtn.textContent = `Loop: ${state.loop ? "On" : "Off"}`;
+        ui.loopBtn.classList.toggle("primary", state.loop);
+      }
+
+      if (typeof data.showGhost === "boolean"){
+        state.showGhost = data.showGhost;
+      }
+
+      if (Number.isFinite(data.masterVolDb)){
+        const mv = clamp(Number(data.masterVolDb), -24, 12);
+        ui.masterVol.value = String(mv);
+        if (state.masterGain && state.audioCtx){
+          state.masterGain.gain.setTargetAtTime(dbToGain(mv), state.audioCtx.currentTime, 0.02);
+        }
+      }
+
+      if (Number.isFinite(data.viewIndex)){
+        setViewMode(Number(data.viewIndex));
+      }
+
+      const byName = new Map(state.stems.map((s, i) => [s.name, i]));
+      const validModes = new Set(["compressor", "limiter", "gate", "expander"]);
+
+      for (const ps of data.stems){
+        let idx = -1;
+        if (ps && typeof ps.name === "string" && byName.has(ps.name)) idx = byName.get(ps.name);
+        else if (ps && Number.isFinite(ps.index)) idx = Number(ps.index);
+        if (idx < 0 || idx >= state.stems.length) continue;
+
+        const stem = state.stems[idx];
+        if (ps.pos){
+          const px = Number(ps.pos.x);
+          const py = Number(ps.pos.y);
+          if (Number.isFinite(px)) stem.pos.x = clamp(px, -1, 1);
+          if (Number.isFinite(py)) stem.pos.y = clamp(py, -1, 1);
+        }
+
+        if (typeof ps.muted === "boolean") stem.muted = ps.muted;
+        if (typeof ps.solo === "boolean") stem.solo = ps.solo;
+
+        if (ps.proc && typeof ps.proc === "object"){
+          if (validModes.has(ps.proc.mode)) stem.proc.mode = ps.proc.mode;
+          if (Number.isFinite(ps.proc.thresholdDb)) stem.proc.thresholdDb = clamp(Number(ps.proc.thresholdDb), -60, 0);
+          if (Number.isFinite(ps.proc.ratioComp)) stem.proc.ratioComp = clamp(Number(ps.proc.ratioComp), 1, 40);
+          if (Number.isFinite(ps.proc.ratioExp)) stem.proc.ratioExp = clamp(Number(ps.proc.ratioExp), 1, 40);
+          if (Number.isFinite(ps.proc.makeupDb)) stem.proc.makeupDb = clamp(Number(ps.proc.makeupDb), 0, 12);
+          if (typeof ps.proc.bypass === "boolean") stem.proc.bypass = ps.proc.bypass;
+          if (Number.isFinite(ps.proc.inputTrimDb)) stem.proc.inputTrimDb = clamp(Number(ps.proc.inputTrimDb), -12, 12);
+        }
+
+        applyStemSpatial(stem);
+        applyStemTrim(stem);
+        applyStemProcessorParams(stem);
+      }
+
+      rebuildStemList();
+      syncSelectedUI();
+      state.waveCacheDirty = true;
+
+      if (Number.isFinite(data.selected) && state.stems.length){
+        selectStem(clamp(Number(data.selected), 0, state.stems.length - 1));
+      } else if (state.selected >= 0){
+        selectStem(state.selected);
+      }
+
+      log("Imported preset.");
+    } catch (err){
+      log("Preset import failed: " + (err?.message || err));
+    }
+  }
+
   // ---------- stem list / selected ui ----------
   function rebuildStemList(){
     ui.stemList.innerHTML = "";
@@ -2238,6 +2372,15 @@
     if (!files || !files.length) return;
     await loadFiles(files);
     ui.fileInput.value = "";
+  });
+
+  ui.exportBtn.addEventListener("click", exportPreset);
+  ui.importBtn.addEventListener("click", () => ui.importFile.click());
+  ui.importFile.addEventListener("change", async (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    await importPresetFile(f);
+    ui.importFile.value = "";
   });
 
   ui.enableAudioBtn.addEventListener("click", async () => {
